@@ -15,7 +15,7 @@
         <!-- Mobile top bar -->
         <div class="mobile-topbar" id="mobileTopbar">
             <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open sidebar">☰</button>
-            <span class="mobile-title">🎯 AlgoPatterns</span>
+            <span class="mobile-title" onclick="goHome()" style="cursor:pointer">🎯 AlgoPatterns</span>
             <span class="mobile-progress" id="mobileProgress">0/150</span>
         </div>
         <!-- Overlay for mobile sidebar -->
@@ -23,7 +23,7 @@
         <!-- Sidebar -->
         <aside id="sidebar">
             <div class="sidebar-header">
-                <h1>🎯 AlgoPatterns</h1>
+                <h1 onclick="goHome()" style="cursor:pointer">🎯 AlgoPatterns</h1>
                 <p class="subtitle">150 LeetCode Problems</p>
                 <div class="progress-bar-container">
                     <div class="progress-bar" id="progressBar"></div>

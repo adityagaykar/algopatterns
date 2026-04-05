@@ -351,5 +351,23 @@ function switchLang(lang) {
     if (p) showSolution(p);
 }
 
+// ===== HOME =====
+function goHome() {
+    state.currentProblemId = null;
+    state.activeFilter = 'all';
+    state.activeDifficulty = 'all';
+    state.searchQuery = '';
+    dom.searchInput.value = '';
+    $$('.filter-btn').forEach(b => b.classList.remove('active'));
+    $$('.filter-btn')[0].classList.add('active');
+    $$('.diff-filter-btn').forEach(b => b.classList.remove('active'));
+    $$('.diff-filter-btn')[0].classList.add('active');
+    window.location.hash = '';
+    dom.problemView.style.display = 'none';
+    dom.welcomeScreen.style.display = 'flex';
+    closeSidebar();
+    renderProblemList();
+}
+
 // ===== START =====
 document.addEventListener('DOMContentLoaded', init);
