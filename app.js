@@ -401,6 +401,9 @@ function goHome() {
     $('#changelogView').style.display = 'none';
     $('#fcFullscreen').style.display = 'none';
     document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
     dom.welcomeScreen.style.display = 'flex';
     closeSidebar();
     renderProblemList();
@@ -619,12 +622,19 @@ function openFcFullscreen() {
     `).join('');
 
     overlay.style.display = 'flex';
+    // iOS scroll lock
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${window.scrollY}px`;
 
     // Scroll to current card
     requestAnimationFrame(() => {
         const target = track.children[fcState.index];
-        if (target) target.scrollIntoView({ behavior: 'instant' });
+        if (target) {
+            // Use scrollTop for broader mobile support
+            track.scrollTop = target.offsetTop;
+        }
         updateFcfsChrome();
     });
 
@@ -636,7 +646,7 @@ function openFcFullscreen() {
         if (idx !== fcState.index && idx >= 0 && idx < fcState.deck.length) {
             fcState.index = idx;
             updateFcfsChrome();
-            renderFcCard(); // keep regular view in sync
+            renderFcCard();
         }
     };
     track.addEventListener('scroll', track._scrollHandler, { passive: true });
@@ -654,7 +664,13 @@ function closeFcFullscreen() {
     const overlay = $('#fcFullscreen');
     const track = $('#fcfsTrack');
     overlay.style.display = 'none';
+    // Restore iOS scroll
+    const scrollY = Math.abs(parseInt(document.body.style.top || '0'));
     document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
+    window.scrollTo(0, scrollY);
     if (track._scrollHandler) track.removeEventListener('scroll', track._scrollHandler);
     if (document._fcfsKeyHandler) document.removeEventListener('keydown', document._fcfsKeyHandler);
 }
@@ -664,7 +680,8 @@ function fcfsNavigate(dir) {
     const newIdx = fcState.index + dir;
     if (newIdx >= 0 && newIdx < fcState.deck.length) {
         fcState.index = newIdx;
-        track.children[newIdx].scrollIntoView({ behavior: 'smooth' });
+        const target = track.children[newIdx];
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         updateFcfsChrome();
         renderFcCard();
     }
