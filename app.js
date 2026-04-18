@@ -622,11 +622,17 @@ function openFcFullscreen() {
     `).join('');
 
     overlay.style.display = 'flex';
-    // iOS scroll lock
+    // Cross-device scroll lock (iOS + Android)
+    document.body.dataset.scrollY = window.scrollY;
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
     document.body.style.top = `-${window.scrollY}px`;
+    // Set real viewport height via JS for devices where CSS units fail
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    overlay.style.height = vh + 'px';
+    track.querySelectorAll('.fcfs-card').forEach(c => c.style.height = vh + 'px');
 
     // Scroll to current card
     requestAnimationFrame(() => {
@@ -658,14 +664,25 @@ function openFcFullscreen() {
         if (e.key === 'Escape') closeFcFullscreen();
     };
     document.addEventListener('keydown', document._fcfsKeyHandler);
+
+    // Handle orientation change and virtual keyboard resize
+    window._fcfsResizeHandler = () => {
+        const newVh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        overlay.style.height = newVh + 'px';
+        track.querySelectorAll('.fcfs-card').forEach(c => c.style.height = newVh + 'px');
+    };
+    (window.visualViewport || window).addEventListener('resize', window._fcfsResizeHandler);
 }
 
 function closeFcFullscreen() {
     const overlay = $('#fcFullscreen');
     const track = $('#fcfsTrack');
     overlay.style.display = 'none';
-    // Restore iOS scroll
-    const scrollY = Math.abs(parseInt(document.body.style.top || '0'));
+    overlay.style.height = '';
+    track.querySelectorAll('.fcfs-card').forEach(c => c.style.height = '');
+    // Restore scroll (iOS + Android)
+    const scrollY = parseInt(document.body.dataset.scrollY || '0');
+    document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     document.body.style.position = '';
     document.body.style.width = '';
@@ -673,6 +690,11 @@ function closeFcFullscreen() {
     window.scrollTo(0, scrollY);
     if (track._scrollHandler) track.removeEventListener('scroll', track._scrollHandler);
     if (document._fcfsKeyHandler) document.removeEventListener('keydown', document._fcfsKeyHandler);
+    // Remove resize listener
+    if (window._fcfsResizeHandler) {
+        (window.visualViewport || window).removeEventListener('resize', window._fcfsResizeHandler);
+        window._fcfsResizeHandler = null;
+    }
 }
 
 function fcfsNavigate(dir) {
