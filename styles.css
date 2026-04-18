@@ -1383,7 +1383,7 @@ pre.line-numbers {
 .fc-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     margin-bottom: 18px;
     gap: 12px;
 }
