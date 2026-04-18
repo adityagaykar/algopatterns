@@ -8,6 +8,32 @@ const state = {
     completed: JSON.parse(localStorage.getItem('completedProblems') || '[]')
 };
 
+
+
+// ===== THEME =====
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = theme === 'dark' ? '☀️' : '🌙';
+    const t1 = document.getElementById('themeToggle');
+    const t2 = document.getElementById('themeToggleMobile');
+    if (t1) t1.textContent = icon;
+    if (t2) t2.textContent = icon;
+    localStorage.setItem('theme', theme);
+}
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+    // Re-highlight code if visible
+    if (typeof Prism !== 'undefined' && state.currentProblemId) {
+        setTimeout(() => Prism.highlightAll(), 50);
+    }
+}
+// Apply saved theme immediately
+(function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+})();
+
 // ===== DOM REFS =====
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -41,6 +67,7 @@ const dom = {
 
 // ===== INIT =====
 function init() {
+    applyTheme(localStorage.getItem('theme') || 'light');
     renderProblemList();
     updateProgress();
     bindEvents();
@@ -109,6 +136,12 @@ function bindEvents() {
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT') return;
+        // Flashcard mode
+        if ($('#flashcardView').style.display !== 'none') {
+            if (e.key === 'ArrowLeft') fcNavigate(-1);
+            if (e.key === 'ArrowRight') fcNavigate(1);
+            return;
+        }
         if (e.key === 'ArrowLeft' || e.key === 'k') navigateProblem(-1);
         if (e.key === 'ArrowRight' || e.key === 'j') navigateProblem(1);
     });
@@ -364,10 +397,194 @@ function goHome() {
     $$('.diff-filter-btn')[0].classList.add('active');
     window.location.hash = '';
     dom.problemView.style.display = 'none';
+    $('#flashcardView').style.display = 'none';
+    $('#changelogView').style.display = 'none';
     dom.welcomeScreen.style.display = 'flex';
     closeSidebar();
     renderProblemList();
 }
 
+// ===== CHANGELOG =====
+function openChangelog() {
+    dom.welcomeScreen.style.display = 'none';
+    dom.problemView.style.display = 'none';
+    $('#flashcardView').style.display = 'none';
+    const view = $('#changelogView');
+    view.style.display = 'flex';
+    renderChangelog();
+}
+
+function closeChangelog() {
+    $('#changelogView').style.display = 'none';
+    goHome();
+}
+
+function renderChangelog() {
+    const container = $('#clContent');
+    container.innerHTML = changelog.map(release => `
+        <div class="cl-release">
+            <div class="cl-release-header">
+                <span class="cl-version">v${release.version}</span>
+                <span class="cl-release-title">${release.title}</span>
+                <span class="cl-date">${release.date}</span>
+            </div>
+            <ul class="cl-changes">
+                ${release.changes.map(c => `
+                    <li class="cl-change">
+                        <span class="cl-type ${c.type}">${c.type}</span>
+                        <span>${c.text}</span>
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
+    `).join('');
+}
+
 // ===== START =====
 document.addEventListener('DOMContentLoaded', init);
+
+// ===== FLASHCARD LOGIC =====
+const fcState = {
+    mode: 'patterns', // 'patterns', 'problems', or 'design'
+    deck: [],
+    index: 0,
+    category: 'all',
+};
+
+function buildProblemCards() {
+    const catIcons = {};
+    flashcards.forEach(f => { catIcons[f.category] = f.icon; });
+    return problems.map(p => ({
+        id: 'p' + p.id,
+        category: p.category,
+        difficulty: p.difficulty,
+        icon: catIcons[p.category] || '📄',
+        front: `LC ${p.lcNumber}. ${p.title}`,
+        back: `Key Insight:\n${p.keyInsight}\n\nApproach:\n${p.approach}\n\nTime: ${p.timeComplexity} | Space: ${p.spaceComplexity}`,
+    }));
+}
+
+function getSourceDeck() {
+    if (fcState.mode === 'patterns') return flashcards;
+    if (fcState.mode === 'design') return designFlashcards;
+    return buildProblemCards();
+}
+
+function openFlashcards(mode) {
+    fcState.mode = mode || 'patterns';
+    dom.welcomeScreen.style.display = 'none';
+    dom.problemView.style.display = 'none';
+    $('#flashcardView').style.display = 'flex';
+    $$('.fc-mode-tab').forEach(t => t.classList.toggle('active', t.dataset.fcMode === fcState.mode));
+    fcState.category = 'all';
+    const source = getSourceDeck();
+    fcState.deck = [...source];
+    fcState.index = 0;
+    buildFcFilters(source);
+    renderFcCard();
+    initFcSwipe();
+}
+
+function switchFcMode(mode) {
+    fcState.mode = mode;
+    $$('.fc-mode-tab').forEach(t => t.classList.toggle('active', t.dataset.fcMode === mode));
+    fcState.category = 'all';
+    const source = getSourceDeck();
+    fcState.deck = [...source];
+    fcState.index = 0;
+    buildFcFilters(source);
+    renderFcCard();
+}
+
+function closeFlashcards() {
+    $('#flashcardView').style.display = 'none';
+    goHome();
+}
+
+function buildFcFilters(source) {
+    const cats = [...new Set(source.map(f => f.category))];
+    const container = $('#fcFilters');
+    container.innerHTML = '<button class="fc-filter active" data-fc-cat="all">All</button>' +
+        cats.map(c => `<button class="fc-filter" data-fc-cat="${c}">${c}</button>`).join('');
+    container.querySelectorAll('.fc-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            container.querySelectorAll('.fc-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            fcState.category = btn.dataset.fcCat;
+            fcState.deck = fcState.category === 'all' ? [...source] : source.filter(f => f.category === fcState.category);
+            fcState.index = 0;
+            renderFcCard();
+        });
+    });
+}
+
+function renderFcCard() {
+    const card = fcState.deck[fcState.index];
+    if (!card) return;
+    const fcCard = $('#fcCard');
+
+    // Accent color per mode
+    const accentColors = {
+        patterns: 'linear-gradient(90deg, #4263eb, #6c5ce7, #a855f7)',
+        problems: 'linear-gradient(90deg, #2b8a3e, #37b24d, #51cf66)',
+        design:   'linear-gradient(90deg, #e67700, #f59f00, #fcc419)',
+    };
+    $('#fcCardAccent').style.background = accentColors[fcState.mode] || accentColors.patterns;
+
+    // Category label
+    $('#fcCategoryLabel').textContent = card.category;
+
+    // Show/hide meta badges for problem mode
+    let metaEl = fcCard.querySelector('.fc-card-meta');
+    if (card.difficulty) {
+        if (!metaEl) {
+            metaEl = document.createElement('div');
+            metaEl.className = 'fc-card-meta';
+            fcCard.querySelector('.fc-card-header').after(metaEl);
+        }
+        metaEl.innerHTML = `<span class="fc-badge ${card.difficulty}">${card.difficulty}</span><span class="fc-badge cat">${card.category}</span>`;
+        metaEl.style.display = 'flex';
+    } else if (metaEl) {
+        metaEl.style.display = 'none';
+    }
+
+    // Re-trigger slide animation
+    fcCard.style.animation = 'none';
+    fcCard.offsetHeight; // reflow
+    fcCard.style.animation = '';
+
+    $('#fcIcon').textContent = card.icon;
+    $('#fcFrontText').textContent = card.front;
+    $('#fcBackText').textContent = card.back;
+    $('#fcCounter').textContent = `${fcState.index + 1} / ${fcState.deck.length}`;
+    $('#fcPrev').disabled = fcState.index === 0;
+    $('#fcNext').disabled = fcState.index === fcState.deck.length - 1;
+    $('#fcProgressFill').style.width = ((fcState.index + 1) / fcState.deck.length * 100) + '%';
+}
+
+function fcNavigate(dir) {
+    const newIdx = fcState.index + dir;
+    if (newIdx >= 0 && newIdx < fcState.deck.length) {
+        fcState.index = newIdx;
+        renderFcCard();
+    }
+}
+
+function fcShuffle() {
+    for (let i = fcState.deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fcState.deck[i], fcState.deck[j]] = [fcState.deck[j], fcState.deck[i]];
+    }
+    fcState.index = 0;
+    renderFcCard();
+}
+
+function initFcSwipe() {
+    const stage = $('#fcCardWrapper');
+    let startX = 0;
+    stage.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+    stage.addEventListener('touchend', e => {
+        const diff = e.changedTouches[0].clientX - startX;
+        if (Math.abs(diff) > 50) fcNavigate(diff < 0 ? 1 : -1);
+    }, { passive: true });
+}

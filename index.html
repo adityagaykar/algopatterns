@@ -16,14 +16,20 @@
         <div class="mobile-topbar" id="mobileTopbar">
             <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open sidebar">☰</button>
             <span class="mobile-title" onclick="goHome()" style="cursor:pointer">🎯 AlgoPatterns</span>
-            <span class="mobile-progress" id="mobileProgress">0/150</span>
+            <div style="display:flex;align-items:center;gap:8px">
+                <button class="theme-toggle" id="themeToggleMobile" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
+                <span class="mobile-progress" id="mobileProgress">0/150</span>
+            </div>
         </div>
         <!-- Overlay for mobile sidebar -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
         <!-- Sidebar -->
         <aside id="sidebar">
             <div class="sidebar-header">
-                <h1 onclick="goHome()" style="cursor:pointer">🎯 AlgoPatterns</h1>
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <h1 onclick="goHome()" style="cursor:pointer">🎯 AlgoPatterns</h1>
+                    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle Light/Dark theme">🌙</button>
+                </div>
                 <p class="subtitle">150 LeetCode Problems</p>
                 <div class="progress-bar-container">
                     <div class="progress-bar" id="progressBar"></div>
@@ -93,8 +99,66 @@
                         <div class="pattern-card" data-category="Design"><span class="pattern-icon">🏗️</span><span>Design</span><span class="count">5</span></div>
                         <div class="pattern-card" data-category="Matrix"><span class="pattern-icon">⬜</span><span>Matrix</span><span class="count">5</span></div>
                     </div>
+                    <div class="flashcard-cta">
+                        <button class="flashcard-launch-btn" onclick="openFlashcards('patterns')">🃏 Pattern Flash Cards</button>
+                        <button class="flashcard-launch-btn fc-btn-problems" onclick="openFlashcards('problems')">📝 Problem Flash Cards</button>
+                        <button class="flashcard-launch-btn fc-btn-design" onclick="openFlashcards('design')">🏗️ Design Flash Cards</button>
+                    </div>
                     <p class="tip"><span class="tip-desktop">👈 Select a problem from the sidebar to begin, or click a pattern card above.</span><span class="tip-mobile">👆 Tap a pattern card above to start, or use ☰ to browse all problems.</span></p>
+                    <div class="changelog-link-wrap">
+                        <a href="#" class="changelog-link" onclick="event.preventDefault();openChangelog()">📋 What's New — Changelog</a>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Changelog View -->
+            <div id="changelogView" class="changelog-view" style="display:none;">
+                <div class="cl-header">
+                    <button class="fc-back-btn" onclick="closeChangelog()"><span class="fc-back-icon">←</span> Back</button>
+                    <h2>📋 Changelog</h2>
+                    <span></span>
+                </div>
+                <div class="cl-content" id="clContent"></div>
+            </div>
+
+            <!-- Flashcard View -->
+            <div id="flashcardView" class="flashcard-view" style="display:none;">
+                <div class="fc-header">
+                    <button class="fc-back-btn" onclick="closeFlashcards()"><span class="fc-back-icon">←</span> Back</button>
+                    <div class="fc-mode-tabs">
+                        <button class="fc-mode-tab active" data-fc-mode="patterns" onclick="switchFcMode('patterns')">🃏 Patterns</button>
+                        <button class="fc-mode-tab" data-fc-mode="problems" onclick="switchFcMode('problems')">📝 Problems</button>
+                        <button class="fc-mode-tab" data-fc-mode="design" onclick="switchFcMode('design')">🏗️ Design</button>
+                    </div>
+                    <span class="fc-counter" id="fcCounter">1 / 24</span>
+                </div>
+                <div class="fc-filters" id="fcFilters">
+                    <button class="fc-filter active" data-fc-cat="all">All</button>
+                </div>
+                <div class="fc-stage">
+                    <div class="fc-card-wrapper" id="fcCardWrapper">
+                        <div class="fc-card" id="fcCard">
+                            <div class="fc-card-accent" id="fcCardAccent"></div>
+                            <div class="fc-card-header">
+                                <span class="fc-icon" id="fcIcon"></span>
+                                <div class="fc-card-title-wrap">
+                                    <h3 id="fcFrontText"></h3>
+                                    <span class="fc-category-label" id="fcCategoryLabel"></span>
+                                </div>
+                            </div>
+                            <div class="fc-card-body">
+                                <pre class="fc-back-text" id="fcBackText"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fc-controls">
+                    <button class="fc-nav-btn" id="fcPrev" onclick="fcNavigate(-1)"><span class="fc-btn-arrow">‹</span> Prev</button>
+                    <button class="fc-shuffle-btn" onclick="fcShuffle()">🔀 Shuffle</button>
+                    <button class="fc-nav-btn" id="fcNext" onclick="fcNavigate(1)">Next <span class="fc-btn-arrow">›</span></button>
+                </div>
+                <div class="fc-progress-bar"><div class="fc-progress-fill" id="fcProgressFill"></div></div>
+                <p class="fc-keyboard-hint">💡 Use <kbd>←</kbd> <kbd>→</kbd> arrow keys or swipe to navigate</p>
             </div>
 
             <!-- Problem Detail View -->
@@ -178,6 +242,9 @@
     </div>
 
     <script src="problems.js"></script>
+    <script src="data/flashcards.js"></script>
+    <script src="data/design-flashcards.js"></script>
+    <script src="data/changelog.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
