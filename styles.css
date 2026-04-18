@@ -1387,28 +1387,6 @@ pre.line-numbers {
     margin-bottom: 18px;
     gap: 12px;
 }
-.fc-back-arrow {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-secondary);
-    font-size: 1.15rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition);
-    flex-shrink: 0;
-    line-height: 1;
-    padding: 0;
-}
-.fc-back-arrow:hover {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-}
 .fc-counter {
     font-size: 0.85rem;
     color: var(--text-muted);
@@ -1692,7 +1670,6 @@ pre.line-numbers {
         border-radius: 10px;
     }
     .fc-mode-tab { padding: 6px 12px; font-size: 0.78rem; }
-    .fc-back-arrow { width: 32px; height: 32px; font-size: 1rem; }
     .fc-counter { padding: 4px 10px; font-size: 0.78rem; }
     .fc-filters {
         flex-wrap: nowrap;
