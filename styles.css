@@ -1042,6 +1042,8 @@ pre.line-numbers {
         height: auto;
         min-height: 100vh;
         overflow-y: auto;
+        overflow-x: hidden;
+        max-width: 100vw;
     }
 
     /* Welcome screen */
@@ -1670,6 +1672,8 @@ pre.line-numbers {
         padding: 12px 8px 16px;
         min-height: calc(100vh - 50px);
         overflow-x: hidden;
+        max-width: 100vw;
+        box-sizing: border-box;
     }
     .fc-header {
         flex-wrap: wrap;
@@ -1684,18 +1688,29 @@ pre.line-numbers {
     .fc-mode-tab { padding: 6px 12px; font-size: 0.78rem; }
     .fc-back-btn { padding: 6px 12px; font-size: 0.82rem; }
     .fc-counter { padding: 4px 10px; font-size: 0.78rem; }
-    .fc-stage { min-height: 300px; }
-    .fc-card { border-radius: 14px; }
-    .fc-card-header { padding: 18px 18px 0; gap: 10px; }
-    .fc-card-body { padding: 12px 18px 20px; }
-    .fc-card-title-wrap h3 { font-size: 1.05rem; }
-    .fc-back-text { font-size: 0.82rem; line-height: 1.65; }
-    .fc-icon { font-size: 1.8rem; width: 40px; height: 40px; border-radius: 10px; }
-    .fc-controls { gap: 8px; }
-    .fc-nav-btn, .fc-shuffle-btn { padding: 10px 18px; font-size: 0.85rem; border-radius: 10px; }
+    .fc-filters {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+    .fc-filters::-webkit-scrollbar { display: none; }
+    .fc-stage { min-height: 280px; }
+    .fc-card-wrapper { max-width: 100%; }
+    .fc-card { border-radius: 14px; max-width: 100%; }
+    .fc-card-header { padding: 16px 14px 0; gap: 10px; }
+    .fc-card-body { padding: 12px 14px 18px; }
+    .fc-card-title-wrap h3 { font-size: 1.02rem; }
+    .fc-category-label { font-size: 0.68rem; }
+    .fc-back-text { font-size: 0.8rem; line-height: 1.6; }
+    .fc-icon { font-size: 1.6rem; width: 38px; height: 38px; border-radius: 10px; }
+    .fc-controls { gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .fc-nav-btn, .fc-shuffle-btn, .fc-fullscreen-btn { padding: 9px 14px; font-size: 0.82rem; border-radius: 10px; }
     .fc-filter { padding: 5px 11px; font-size: 0.72rem; }
     .flashcard-launch-btn { padding: 13px 22px; font-size: 0.92rem; }
     .fc-keyboard-hint { display: none; }
+    .fc-card-meta { padding: 0 14px; }
 }
 @media (min-width: 769px) and (max-width: 1024px) {
     .flashcard-view { max-width: 620px; padding: 20px 18px; }
