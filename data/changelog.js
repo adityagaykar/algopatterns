@@ -1,5 +1,17 @@
 const changelog = [
     {
+        version: "1.4.1",
+        date: "2026-04-18",
+        title: "Cross-Device Focus Mode Fixes",
+        changes: [
+            { type: "fixed", text: "Focus Mode now works on iPhone Safari, iPad, Android Chrome, and Samsung Browser" },
+            { type: "fixed", text: "Proper viewport height using visualViewport API — no more cards hidden behind URL bars" },
+            { type: "fixed", text: "iPhone notch and Dynamic Island safe area padding for controls" },
+            { type: "improved", text: "Auto-resize on orientation change and virtual keyboard appearance" },
+            { type: "improved", text: "Tablet-optimized layout for iPad and Android tablets (769–1024px)" },
+        ]
+    },
+    {
         version: "1.4.0",
         date: "2026-04-18",
         title: "Focus Mode & Changelog",
