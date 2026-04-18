@@ -399,6 +399,8 @@ function goHome() {
     dom.problemView.style.display = 'none';
     $('#flashcardView').style.display = 'none';
     $('#changelogView').style.display = 'none';
+    $('#fcFullscreen').style.display = 'none';
+    document.body.style.overflow = '';
     dom.welcomeScreen.style.display = 'flex';
     closeSidebar();
     renderProblemList();
@@ -587,4 +589,88 @@ function initFcSwipe() {
         const diff = e.changedTouches[0].clientX - startX;
         if (Math.abs(diff) > 50) fcNavigate(diff < 0 ? 1 : -1);
     }, { passive: true });
+}
+
+// ===== FULLSCREEN FLASHCARD MODE =====
+function openFcFullscreen() {
+    const overlay = $('#fcFullscreen');
+    const track = $('#fcfsTrack');
+    const accentClass = fcState.mode;
+
+    // Render all cards in the track
+    track.innerHTML = fcState.deck.map((card, i) => `
+        <div class="fcfs-card" data-idx="${i}">
+            <div class="fcfs-card-inner">
+                <div class="fcfs-card-accent ${accentClass}"></div>
+                <div class="fcfs-card-head">
+                    <span class="fcfs-card-icon">${card.icon}</span>
+                    <div class="fcfs-card-title-wrap">
+                        <h3>${card.front}</h3>
+                        <span class="fcfs-card-cat">${card.category}</span>
+                    </div>
+                </div>
+                ${card.difficulty ? `<div class="fc-card-meta" style="padding:0 26px;margin:10px 0 0"><span class="fc-badge ${card.difficulty}">${card.difficulty}</span><span class="fc-badge cat">${card.category}</span></div>` : ''}
+                <div class="fcfs-card-body">
+                    <pre>${card.back}</pre>
+                </div>
+            </div>
+            <span class="fcfs-card-num">${i + 1} / ${fcState.deck.length}</span>
+        </div>
+    `).join('');
+
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    // Scroll to current card
+    requestAnimationFrame(() => {
+        const target = track.children[fcState.index];
+        if (target) target.scrollIntoView({ behavior: 'instant' });
+        updateFcfsChrome();
+    });
+
+    // Track scroll to update counter
+    track._scrollHandler = () => {
+        const scrollTop = track.scrollTop;
+        const cardH = track.children[0]?.offsetHeight || window.innerHeight;
+        const idx = Math.round(scrollTop / cardH);
+        if (idx !== fcState.index && idx >= 0 && idx < fcState.deck.length) {
+            fcState.index = idx;
+            updateFcfsChrome();
+            renderFcCard(); // keep regular view in sync
+        }
+    };
+    track.addEventListener('scroll', track._scrollHandler, { passive: true });
+
+    // Keyboard
+    document._fcfsKeyHandler = (e) => {
+        if (e.key === 'ArrowUp') { e.preventDefault(); fcfsNavigate(-1); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); fcfsNavigate(1); }
+        if (e.key === 'Escape') closeFcFullscreen();
+    };
+    document.addEventListener('keydown', document._fcfsKeyHandler);
+}
+
+function closeFcFullscreen() {
+    const overlay = $('#fcFullscreen');
+    const track = $('#fcfsTrack');
+    overlay.style.display = 'none';
+    document.body.style.overflow = '';
+    if (track._scrollHandler) track.removeEventListener('scroll', track._scrollHandler);
+    if (document._fcfsKeyHandler) document.removeEventListener('keydown', document._fcfsKeyHandler);
+}
+
+function fcfsNavigate(dir) {
+    const track = $('#fcfsTrack');
+    const newIdx = fcState.index + dir;
+    if (newIdx >= 0 && newIdx < fcState.deck.length) {
+        fcState.index = newIdx;
+        track.children[newIdx].scrollIntoView({ behavior: 'smooth' });
+        updateFcfsChrome();
+        renderFcCard();
+    }
+}
+
+function updateFcfsChrome() {
+    $('#fcfsCounter').textContent = `${fcState.index + 1} / ${fcState.deck.length}`;
+    $('#fcfsProgressFill').style.width = ((fcState.index + 1) / fcState.deck.length * 100) + '%';
 }

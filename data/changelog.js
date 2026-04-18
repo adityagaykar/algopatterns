@@ -1,5 +1,17 @@
 const changelog = [
     {
+        version: "1.4.0",
+        date: "2026-04-18",
+        title: "Focus Mode & Changelog",
+        changes: [
+            { type: "feature", text: "Fullscreen Focus Mode — scroll through flash cards like YouTube Shorts with vertical snap-scroll" },
+            { type: "feature", text: "Changelog page accessible from welcome screen to track all updates" },
+            { type: "feature", text: "Arrow Up/Down keyboard navigation and Escape to exit Focus Mode" },
+            { type: "improved", text: "Focus Mode syncs with regular flashcard view — resume where you left off" },
+            { type: "improved", text: "Side navigation arrows and progress bar overlay in fullscreen" },
+        ]
+    },
+    {
         version: "1.3.0",
         date: "2026-04-18",
         title: "Dark Theme & Visual Polish",

@@ -155,6 +155,7 @@
                 <div class="fc-controls">
                     <button class="fc-nav-btn" id="fcPrev" onclick="fcNavigate(-1)"><span class="fc-btn-arrow">‹</span> Prev</button>
                     <button class="fc-shuffle-btn" onclick="fcShuffle()">🔀 Shuffle</button>
+                    <button class="fc-fullscreen-btn" onclick="openFcFullscreen()" title="Fullscreen mode">⛶ Focus</button>
                     <button class="fc-nav-btn" id="fcNext" onclick="fcNavigate(1)">Next <span class="fc-btn-arrow">›</span></button>
                 </div>
                 <div class="fc-progress-bar"><div class="fc-progress-fill" id="fcProgressFill"></div></div>
@@ -239,6 +240,22 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Fullscreen Flashcard Overlay -->
+    <div id="fcFullscreen" class="fcfs-overlay" style="display:none;">
+        <div class="fcfs-chrome">
+            <button class="fcfs-close" onclick="closeFcFullscreen()">✕</button>
+            <span class="fcfs-counter" id="fcfsCounter">1 / 24</span>
+            <div class="fcfs-progress"><div class="fcfs-progress-fill" id="fcfsProgressFill"></div></div>
+        </div>
+        <div class="fcfs-track" id="fcfsTrack">
+            <!-- Cards rendered by JS -->
+        </div>
+        <div class="fcfs-nav">
+            <button class="fcfs-nav-btn" id="fcfsUp" onclick="fcfsNavigate(-1)">▲</button>
+            <button class="fcfs-nav-btn" id="fcfsDown" onclick="fcfsNavigate(1)">▼</button>
+        </div>
     </div>
 
     <script src="problems.js"></script>
