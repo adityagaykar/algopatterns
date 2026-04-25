@@ -214,14 +214,7 @@
                     <div class="ai-inline-card" id="aiInlineCard">
                         <div class="ai-inline-head">
                             <span class="ai-inline-title">⚡ Live answer (free)</span>
-                            <select id="aiModelSelect" title="Model">
-                                <option value="openai">openai (gpt-4o-mini)</option>
-                                <option value="openai-large">openai-large (gpt-4o)</option>
-                                <option value="mistral">mistral</option>
-                                <option value="llama">llama</option>
-                                <option value="deepseek">deepseek</option>
-                                <option value="gemini">gemini</option>
-                            </select>
+                            <span class="ai-inline-model">GPT-OSS 20B</span>
                         </div>
                         <div class="ai-key-help">
                             Powered by <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations.ai</a> — free &amp; keyless. No signup, no data stored.
@@ -293,13 +286,7 @@
         const askBtn    = document.getElementById('aiInlineAsk');
         const copyBtn   = document.getElementById('aiInlineCopy');
         const outputEl  = document.getElementById('aiInlineOutput');
-        const modelSel  = document.getElementById('aiModelSelect');
-
-        const savedModel = localStorage.getItem('aiLookupModel');
-        if (savedModel) modelSel.value = savedModel;
-        modelSel.addEventListener('change', () => {
-            localStorage.setItem('aiLookupModel', modelSel.value);
-        });
+        const MODEL     = 'openai'; // anonymous-tier model on Pollinations
 
         askBtn.addEventListener('click', async () => {
             const topic = getCurrentTopic();
@@ -310,8 +297,9 @@
             outputEl.classList.remove('empty');
             outputEl.textContent = '⏳ Thinking…';
             try {
-                const text = await callPollinations(modelSel.value, prompt);
-                outputEl.textContent = text;
+                const text = await callPollinations(MODEL, prompt);
+                outputEl.dataset.raw = text;
+                outputEl.innerHTML = renderMarkdown(text);
                 outputEl.scrollTop = 0;
                 copyBtn.disabled = false;
                 // Collapse the top controls so the answer gets the full panel
@@ -325,12 +313,170 @@
         });
 
         copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(outputEl.textContent || '').then(() => {
+            const raw = outputEl.dataset.raw || outputEl.textContent || '';
+            navigator.clipboard.writeText(raw).then(() => {
                 const orig = copyBtn.textContent;
                 copyBtn.textContent = '✓ Copied';
                 setTimeout(() => copyBtn.textContent = orig, 1500);
             });
         });
+    }
+
+    // -------------------------------------------------------
+    // Lightweight Markdown → HTML renderer (no deps)
+    // Supports: # H1–### H3, **bold**, *italic*, `inline code`,
+    //          ```code fences```, - / * / 1. lists, > blockquote,
+    //          links [text](url), tables, paragraphs.
+    // -------------------------------------------------------
+    function escapeHtml(s) {
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function renderInline(s) {
+        // protect inline code first
+        const codeSlots = [];
+        s = s.replace(/`([^`]+)`/g, (_, c) => {
+            codeSlots.push(c);
+            return `\u0000CODE${codeSlots.length - 1}\u0000`;
+        });
+        s = escapeHtml(s);
+        // bold + italic
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+        s = s.replace(/(^|[\s(])\*([^*\s][^*]*?)\*(?=[\s).,!?;:]|$)/g, '$1<em>$2</em>');
+        s = s.replace(/(^|[\s(])_([^_\s][^_]*?)_(?=[\s).,!?;:]|$)/g, '$1<em>$2</em>');
+        // links
+        s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,
+            '<a href="$2" target="_blank" rel="noopener">$1</a>');
+        // restore inline code
+        s = s.replace(/\u0000CODE(\d+)\u0000/g, (_, i) => `<code>${escapeHtml(codeSlots[+i])}</code>`);
+        return s;
+    }
+    function renderMarkdown(md) {
+        if (!md) return '';
+        const lines = md.replace(/\r\n?/g, '\n').split('\n');
+        const out = [];
+        let i = 0;
+        let inUL = false, inOL = false;
+        const closeLists = () => {
+            if (inUL) { out.push('</ul>'); inUL = false; }
+            if (inOL) { out.push('</ol>'); inOL = false; }
+        };
+        while (i < lines.length) {
+            const line = lines[i];
+
+            // fenced code block
+            const fence = line.match(/^```\s*([\w-]*)\s*$/);
+            if (fence) {
+                closeLists();
+                const lang = fence[1] || '';
+                const buf = [];
+                i++;
+                while (i < lines.length && !/^```\s*$/.test(lines[i])) {
+                    buf.push(lines[i]);
+                    i++;
+                }
+                i++; // skip closing fence
+                out.push(`<pre class="ai-md-pre"><code class="ai-md-code${lang ? ' lang-' + lang : ''}">${escapeHtml(buf.join('\n'))}</code></pre>`);
+                continue;
+            }
+
+            // headings
+            const h = line.match(/^(#{1,4})\s+(.+)$/);
+            if (h) {
+                closeLists();
+                const lvl = Math.min(h[1].length + 1, 5); // bump down a level (h2..h5)
+                out.push(`<h${lvl} class="ai-md-h">${renderInline(h[2])}</h${lvl}>`);
+                i++; continue;
+            }
+
+            // horizontal rule
+            if (/^[-*_]{3,}\s*$/.test(line)) {
+                closeLists();
+                out.push('<hr class="ai-md-hr">');
+                i++; continue;
+            }
+
+            // blockquote
+            if (/^>\s?/.test(line)) {
+                closeLists();
+                const buf = [];
+                while (i < lines.length && /^>\s?/.test(lines[i])) {
+                    buf.push(lines[i].replace(/^>\s?/, ''));
+                    i++;
+                }
+                out.push(`<blockquote class="ai-md-bq">${renderInline(buf.join(' '))}</blockquote>`);
+                continue;
+            }
+
+            // unordered list
+            if (/^\s*[-*+]\s+/.test(line)) {
+                if (!inUL) { closeLists(); out.push('<ul class="ai-md-ul">'); inUL = true; }
+                out.push(`<li>${renderInline(line.replace(/^\s*[-*+]\s+/, ''))}</li>`);
+                i++; continue;
+            }
+            // ordered list
+            if (/^\s*\d+\.\s+/.test(line)) {
+                if (!inOL) { closeLists(); out.push('<ol class="ai-md-ol">'); inOL = true; }
+                out.push(`<li>${renderInline(line.replace(/^\s*\d+\.\s+/, ''))}</li>`);
+                i++; continue;
+            }
+
+            // blank line → close lists, paragraph break
+            if (/^\s*$/.test(line)) {
+                closeLists();
+                i++; continue;
+            }
+
+            // table: | a | b |\n|---|---|\n| x | y | ...
+            if (/^\s*\|.*\|\s*$/.test(line)
+                && i + 1 < lines.length
+                && /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(lines[i + 1])) {
+                closeLists();
+                const splitRow = (row) => row.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map(c => c.trim());
+                const header = splitRow(line);
+                const aligns = splitRow(lines[i + 1]).map(spec => {
+                    const l = /^:/.test(spec), r = /:$/.test(spec);
+                    if (l && r) return 'center';
+                    if (r)      return 'right';
+                    return 'left';
+                });
+                i += 2;
+                const rows = [];
+                while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+                    rows.push(splitRow(lines[i]));
+                    i++;
+                }
+                const th = header.map((h, idx) =>
+                    `<th style="text-align:${aligns[idx] || 'left'}">${renderInline(h)}</th>`).join('');
+                const trs = rows.map(r =>
+                    '<tr>' + r.map((c, idx) =>
+                        `<td style="text-align:${aligns[idx] || 'left'}">${renderInline(c)}</td>`).join('') + '</tr>'
+                ).join('');
+                out.push(`<div class="ai-md-table-wrap"><table class="ai-md-table"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`);
+                continue;
+            }
+
+            // paragraph (greedy: collect consecutive non-special lines)
+            closeLists();
+            const buf = [line];
+            i++;
+            while (i < lines.length
+                && !/^\s*$/.test(lines[i])
+                && !/^(#{1,4})\s+/.test(lines[i])
+                && !/^```/.test(lines[i])
+                && !/^>\s?/.test(lines[i])
+                && !/^\s*[-*+]\s+/.test(lines[i])
+                && !/^\s*\d+\.\s+/.test(lines[i])
+                && !/^[-*_]{3,}\s*$/.test(lines[i])
+                && !/^\s*\|.*\|\s*$/.test(lines[i])) {
+                buf.push(lines[i]);
+                i++;
+            }
+            out.push(`<p class="ai-md-p">${renderInline(buf.join(' '))}</p>`);
+        }
+        closeLists();
+        return out.join('\n');
     }
 
     // -------------------------------------------------------
