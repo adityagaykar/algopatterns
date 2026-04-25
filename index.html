@@ -6,7 +6,7 @@
     <title>AlgoPatterns — Master Technical Interview Patterns</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
 </head>
@@ -15,7 +15,14 @@
         <!-- Mobile top bar -->
         <div class="mobile-topbar" id="mobileTopbar">
             <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open sidebar">☰</button>
-            <span class="mobile-title" onclick="goHome()" style="cursor:pointer">🎯 AlgoPatterns</span>
+            <span class="mobile-title" onclick="goHome()" style="cursor:pointer">
+                <svg class="brand-mark brand-mark-sm" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                    <rect x="2" y="2" width="28" height="28" rx="7" fill="url(#brandGrad)"/>
+                    <path d="M10 21 L14 11 L18 21 M11.5 17.5 H16.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <path d="M21 11 V21 M21 16 H25" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+                AlgoPatterns
+            </span>
             <div style="display:flex;align-items:center;gap:8px">
                 <button class="theme-toggle" id="themeToggleMobile" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
                 <span class="mobile-progress" id="mobileProgress">0/150</span>
@@ -26,49 +33,100 @@
         <!-- Sidebar -->
         <aside id="sidebar">
             <div class="sidebar-header">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                    <h1 onclick="goHome()" style="cursor:pointer">🎯 AlgoPatterns</h1>
+                <div class="sidebar-brand-row">
+                    <a class="brand" onclick="goHome()" role="button" tabindex="0">
+                        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                            <defs>
+                                <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#4263eb"/>
+                                    <stop offset="100%" stop-color="#7048e8"/>
+                                </linearGradient>
+                            </defs>
+                            <rect x="2" y="2" width="28" height="28" rx="7" fill="url(#brandGrad)"/>
+                            <path d="M10 21 L14 11 L18 21 M11.5 17.5 H16.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                            <path d="M21 11 V21 M21 16 H25" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                        <h1>AlgoPatterns</h1>
+                    </a>
                     <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle Light/Dark theme">🌙</button>
                 </div>
-                <p class="subtitle">150 LeetCode Problems</p>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <!-- ===== Algorithm Patterns sidebar ===== -->
+            <div class="sidebar-section" data-sidebar-section="algos">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search problems..." />
                 </div>
-                <p class="progress-text" id="progressText">0 / 150 completed</p>
+                <div class="difficulty-filters" id="difficultyFilters">
+                    <button class="diff-filter-btn active" data-diff="all">All</button>
+                    <button class="diff-filter-btn diff-medium" data-diff="Medium">Medium</button>
+                    <button class="diff-filter-btn diff-hard" data-diff="Hard">Hard</button>
+                </div>
+                <div class="filter-buttons" id="filterButtons">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="Two Pointers">Two Pointers</button>
+                    <button class="filter-btn" data-filter="Sliding Window">Sliding Window</button>
+                    <button class="filter-btn" data-filter="Binary Search">Binary Search</button>
+                    <button class="filter-btn" data-filter="Stack">Stack</button>
+                    <button class="filter-btn" data-filter="Heap / Priority Queue">Heap</button>
+                    <button class="filter-btn" data-filter="Linked List">Linked List</button>
+                    <button class="filter-btn" data-filter="Trees">Trees</button>
+                    <button class="filter-btn" data-filter="Graph BFS/DFS">Graph</button>
+                    <button class="filter-btn" data-filter="Topological Sort">Topo Sort</button>
+                    <button class="filter-btn" data-filter="Union Find">Union Find</button>
+                    <button class="filter-btn" data-filter="Dynamic Programming">DP</button>
+                    <button class="filter-btn" data-filter="Backtracking">Backtracking</button>
+                    <button class="filter-btn" data-filter="Greedy">Greedy</button>
+                    <button class="filter-btn" data-filter="Intervals">Intervals</button>
+                    <button class="filter-btn" data-filter="Trie">Trie</button>
+                    <button class="filter-btn" data-filter="String">String</button>
+                    <button class="filter-btn" data-filter="Math / Bit Manipulation">Math/Bit</button>
+                    <button class="filter-btn" data-filter="Design">Design</button>
+                    <button class="filter-btn" data-filter="Matrix">Matrix</button>
+                </div>
+                <nav class="problem-list" id="problemList">
+                    <!-- Populated by JS -->
+                </nav>
             </div>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search problems..." />
+
+            <!-- ===== AI/ML Basics sidebar ===== -->
+            <div class="sidebar-section" data-sidebar-section="basics" style="display:none;">
+                <div class="search-box">
+                    <input type="text" id="basicsSearchInput" placeholder="Search basics..." />
+                </div>
+                <div class="filter-buttons sidebar-track-filters" id="basicsTrackFilters">
+                    <!-- Populated by JS -->
+                </div>
+                <nav class="problem-list" id="basicsList">
+                    <!-- Populated by JS -->
+                </nav>
             </div>
-            <div class="difficulty-filters" id="difficultyFilters">
-                <button class="diff-filter-btn active" data-diff="all">All</button>
-                <button class="diff-filter-btn diff-medium" data-diff="Medium">Medium</button>
-                <button class="diff-filter-btn diff-hard" data-diff="Hard">Hard</button>
+
+            <!-- ===== AI/ML System Design sidebar ===== -->
+            <div class="sidebar-section" data-sidebar-section="aiml" style="display:none;">
+                <div class="search-box">
+                    <input type="text" id="aimlSearchInput" placeholder="Search ML problems..." />
+                </div>
+                <div class="filter-buttons sidebar-track-filters" id="aimlCategoryFilters">
+                    <!-- Populated by JS -->
+                </div>
+                <nav class="problem-list" id="aimlList">
+                    <!-- Populated by JS -->
+                </nav>
             </div>
-            <div class="filter-buttons" id="filterButtons">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="Two Pointers">Two Pointers</button>
-                <button class="filter-btn" data-filter="Sliding Window">Sliding Window</button>
-                <button class="filter-btn" data-filter="Binary Search">Binary Search</button>
-                <button class="filter-btn" data-filter="Stack">Stack</button>
-                <button class="filter-btn" data-filter="Heap / Priority Queue">Heap</button>
-                <button class="filter-btn" data-filter="Linked List">Linked List</button>
-                <button class="filter-btn" data-filter="Trees">Trees</button>
-                <button class="filter-btn" data-filter="Graph BFS/DFS">Graph</button>
-                <button class="filter-btn" data-filter="Topological Sort">Topo Sort</button>
-                <button class="filter-btn" data-filter="Union Find">Union Find</button>
-                <button class="filter-btn" data-filter="Dynamic Programming">DP</button>
-                <button class="filter-btn" data-filter="Backtracking">Backtracking</button>
-                <button class="filter-btn" data-filter="Greedy">Greedy</button>
-                <button class="filter-btn" data-filter="Intervals">Intervals</button>
-                <button class="filter-btn" data-filter="Trie">Trie</button>
-                <button class="filter-btn" data-filter="String">String</button>
-                <button class="filter-btn" data-filter="Math / Bit Manipulation">Math/Bit</button>
-                <button class="filter-btn" data-filter="Design">Design</button>
-                <button class="filter-btn" data-filter="Matrix">Matrix</button>
+
+            <!-- ===== AI for Devs sidebar ===== -->
+            <div class="sidebar-section" data-sidebar-section="devskills" style="display:none;">
+                <div class="search-box">
+                    <input type="text" id="devskillsSearchInput" placeholder="Search AI skills..." />
+                </div>
+                <div class="filter-buttons sidebar-track-filters" id="devskillsTrackFilters">
+                    <!-- Populated by JS -->
+                </div>
+                <nav class="problem-list" id="devskillsList">
+                    <!-- Populated by JS -->
+                </nav>
             </div>
-            <nav class="problem-list" id="problemList">
-                <!-- Populated by JS -->
-            </nav>
         </aside>
 
         <!-- Main Content -->
@@ -76,35 +134,100 @@
             <!-- Welcome Screen -->
             <div id="welcomeScreen" class="welcome">
                 <div class="welcome-inner">
-                    <h1>🚀 Master Algorithm patterns</h1>
-                    <p>Curated LeetCode problems organized by pattern. Each problem includes step-by-step analytical thinking to help you build problem-solving intuition.</p>
-                    <div class="pattern-grid">
-                        <div class="pattern-card" data-category="Two Pointers"><span class="pattern-icon">👆</span><span>Two Pointers</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Sliding Window"><span class="pattern-icon">🪟</span><span>Sliding Window</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Binary Search"><span class="pattern-icon">🔍</span><span>Binary Search</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Stack"><span class="pattern-icon">📚</span><span>Stack</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Heap / Priority Queue"><span class="pattern-icon">⛰️</span><span>Heap</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Linked List"><span class="pattern-icon">🔗</span><span>Linked List</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Trees"><span class="pattern-icon">🌳</span><span>Trees</span><span class="count">7</span></div>
-                        <div class="pattern-card" data-category="Graph BFS/DFS"><span class="pattern-icon">🕸️</span><span>Graph BFS/DFS</span><span class="count">8</span></div>
-                        <div class="pattern-card" data-category="Topological Sort"><span class="pattern-icon">📊</span><span>Topo Sort</span><span class="count">3</span></div>
-                        <div class="pattern-card" data-category="Union Find"><span class="pattern-icon">🤝</span><span>Union Find</span><span class="count">3</span></div>
-                        <div class="pattern-card" data-category="Dynamic Programming"><span class="pattern-icon">🧩</span><span>Dynamic Programming</span><span class="count">15</span></div>
-                        <div class="pattern-card" data-category="Backtracking"><span class="pattern-icon">↩️</span><span>Backtracking</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Greedy"><span class="pattern-icon">💰</span><span>Greedy</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Intervals"><span class="pattern-icon">📏</span><span>Intervals</span><span class="count">4</span></div>
-                        <div class="pattern-card" data-category="Trie"><span class="pattern-icon">🔤</span><span>Trie</span><span class="count">3</span></div>
-                        <div class="pattern-card" data-category="String"><span class="pattern-icon">📝</span><span>String</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Math / Bit Manipulation"><span class="pattern-icon">🔢</span><span>Math / Bit</span><span class="count">4</span></div>
-                        <div class="pattern-card" data-category="Design"><span class="pattern-icon">🏗️</span><span>Design</span><span class="count">5</span></div>
-                        <div class="pattern-card" data-category="Matrix"><span class="pattern-icon">⬜</span><span>Matrix</span><span class="count">5</span></div>
+                    <div class="hero-block">
+                        <h1>Master Technical Interviews</h1>
+                        <p class="hero-sub">Curated LeetCode patterns, AI/ML fundamentals, and ML system-design frameworks — all in one place.</p>
                     </div>
-                    <div class="flashcard-cta">
-                        <button class="flashcard-launch-btn" onclick="openFlashcards('patterns')">🃏 Pattern Flash Cards</button>
-                        <button class="flashcard-launch-btn fc-btn-problems" onclick="openFlashcards('problems')">📝 Problem Flash Cards</button>
-                        <button class="flashcard-launch-btn fc-btn-design" onclick="openFlashcards('design')">🏗️ Design Flash Cards</button>
-                    </div>
-                    <p class="tip"><span class="tip-desktop">👈 Select a problem from the sidebar to begin, or click a pattern card above.</span><span class="tip-mobile">👆 Tap a pattern card above to start, or use ☰ to browse all problems.</span></p>
+
+                    <!-- Top-level section tabs -->
+                    <nav class="home-tabs" role="tablist" aria-label="Home sections">
+                        <button class="home-tab active" data-home-tab="algos" onclick="switchHomeTab('algos')" role="tab" aria-selected="true">
+                            <span class="home-tab-icon">🚀</span>
+                            <span class="home-tab-label"><span class="tab-long">Algorithm </span>Patterns</span>
+                            <span class="home-tab-count">150</span>
+                        </button>
+                        <button class="home-tab" data-home-tab="basics" onclick="switchHomeTab('basics')" role="tab" aria-selected="false">
+                            <span class="home-tab-icon">📚</span>
+                            <span class="home-tab-label"><span class="tab-long">AI / ML </span>Basics</span>
+                            <span class="home-tab-count" id="basicsTabCount">20</span>
+                        </button>
+                        <button class="home-tab" data-home-tab="aiml" onclick="switchHomeTab('aiml')" role="tab" aria-selected="false">
+                            <span class="home-tab-icon">🤖</span>
+                            <span class="home-tab-label">AI<span class="tab-long"> / ML System</span> Design</span>
+                            <span class="home-tab-count" id="aimlTabCount">10</span>
+                        </button>
+                        <button class="home-tab" data-home-tab="devskills" onclick="switchHomeTab('devskills')" role="tab" aria-selected="false">
+                            <span class="home-tab-icon">✨</span>
+                            <span class="home-tab-label">AI for Devs</span>
+                            <span class="home-tab-count" id="devskillsTabCount">24</span>
+                        </button>
+                    </nav>
+
+                    <!-- ===== Algorithm Patterns Section ===== -->
+                    <section class="home-section active" data-home-section="algos">
+                        <div class="home-section-intro">
+                            <h2><span class="h-emoji">🚀</span> Algorithm Patterns</h2>
+                            <p>Curated LeetCode problems organized by pattern. Each problem includes step-by-step analytical thinking to build your problem-solving intuition.</p>
+                        </div>
+                        <div class="pattern-grid" id="patternGrid">
+                            <!-- Populated dynamically from problems data -->
+                        </div>
+                        <div class="flashcard-cta">
+                            <button class="flashcard-launch-btn" onclick="openFlashcards('patterns')">🃏 Pattern Flash Cards</button>
+                            <button class="flashcard-launch-btn fc-btn-problems" onclick="openFlashcards('problems')">📝 Problem Flash Cards</button>
+                            <button class="flashcard-launch-btn fc-btn-design" onclick="openFlashcards('design')">🏗️ Design Flash Cards</button>
+                        </div>
+                    </section>
+
+                    <!-- ===== AI / ML Basics Section ===== -->
+                    <section class="home-section" data-home-section="basics">
+                        <div class="home-section-intro basics-intro">
+                            <h2><span class="h-emoji">📚</span> AI / ML Basics</h2>
+                            <p>Bite-sized refreshers on math, classical ML, deep learning, NLP, recommenders, and MLOps fundamentals you need cold for any ML interview.</p>
+                        </div>
+                        <div class="basics-tracks" id="basicsTracks">
+                            <!-- Track filter pills, populated by JS -->
+                        </div>
+                        <div class="basics-grid" id="basicsGrid">
+                            <!-- Populated by JS from aiMlBasics -->
+                        </div>
+                        <div class="flashcard-cta">
+                            <button class="flashcard-launch-btn fc-btn-basics" onclick="openFlashcards('ai-ml-basics')">📚 AI / ML Basics Cards</button>
+                        </div>
+                    </section>
+
+                    <!-- ===== AI / ML System Design Section ===== -->
+                    <section class="home-section" data-home-section="aiml">
+                        <div class="home-section-intro aiml-intro">
+                            <h2><span class="h-emoji">🤖</span> AI / ML System Design</h2>
+                            <p>Detailed answer frameworks for ML interview questions — framing, metrics, data, model, serving, scale, monitoring, and risks.</p>
+                        </div>
+                        <div class="aiml-grid" id="aimlGrid">
+                            <!-- Populated by JS from aiMlProblems -->
+                        </div>
+                        <div class="flashcard-cta">
+                            <button class="flashcard-launch-btn fc-btn-aiml" onclick="openFlashcards('ai-ml')">🤖 AI / ML Flash Cards</button>
+                        </div>
+                    </section>
+
+                    <!-- ===== AI for Developers Section ===== -->
+                    <section class="home-section" data-home-section="devskills">
+                        <div class="home-section-intro devskills-intro">
+                            <h2><span class="h-emoji">✨</span> AI for Developers</h2>
+                            <p>Agentic AI skills employers expect from engineers in 2026 — prompting, agents, MCP, AI-augmented workflow, production systems, and how to showcase it all.</p>
+                        </div>
+                        <div class="basics-tracks" id="devskillsTracks">
+                            <!-- Track filter pills, populated by JS -->
+                        </div>
+                        <div class="basics-grid" id="devskillsGrid">
+                            <!-- Populated by JS from aiDevSkills -->
+                        </div>
+                        <div class="flashcard-cta">
+                            <button class="flashcard-launch-btn fc-btn-devskills" onclick="openFlashcards('ai-dev-skills')">✨ AI for Devs Flash Cards</button>
+                        </div>
+                    </section>
+
+                    <p class="tip"><span class="tip-desktop">👈 Select a problem from the sidebar, or click any card above.</span><span class="tip-mobile">👆 Tap a card above to start, or use ☰ to browse all problems.</span></p>
                     <div class="changelog-link-wrap">
                         <a href="#" class="changelog-link" onclick="event.preventDefault();openChangelog()">📋 What's New — Changelog</a>
                     </div>
@@ -127,6 +250,9 @@
                         <button class="fc-mode-tab active" data-fc-mode="patterns" onclick="switchFcMode('patterns')">🃏 Patterns</button>
                         <button class="fc-mode-tab" data-fc-mode="problems" onclick="switchFcMode('problems')">📝 Problems</button>
                         <button class="fc-mode-tab" data-fc-mode="design" onclick="switchFcMode('design')">🏗️ Design</button>
+                        <button class="fc-mode-tab" data-fc-mode="ai-ml" onclick="switchFcMode('ai-ml')">🤖 AI/ML</button>
+                        <button class="fc-mode-tab" data-fc-mode="ai-ml-basics" onclick="switchFcMode('ai-ml-basics')">📚 Basics</button>
+                        <button class="fc-mode-tab" data-fc-mode="ai-dev-skills" onclick="switchFcMode('ai-dev-skills')">✨ AI for Devs</button>
                     </div>
                     <span class="fc-counter" id="fcCounter">1 / 24</span>
                 </div>
@@ -175,7 +301,6 @@
                             <span class="badge lc-number" id="problemLC"></span>
                         </div>
                     </div>
-                    <button id="markCompleteBtn" class="complete-btn">Mark as Complete ✓</button>
                 </div>
 
                 <div class="problem-content">
@@ -237,6 +362,56 @@
                     </section>
                 </div>
             </div>
+
+            <!-- AI / ML Problem Detail View -->
+            <div id="aimlView" class="problem-view aiml-view" style="display:none;">
+                <div class="problem-header">
+                    <button class="nav-btn" onclick="goHome()">← Back to AI/ML</button>
+                    <div class="problem-title-row">
+                        <h1 id="aimlTitle"></h1>
+                        <div class="problem-meta">
+                            <span class="badge difficulty" id="aimlDifficulty"></span>
+                            <span class="badge category" id="aimlCategory"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-content" id="aimlContent">
+                    <!-- Sections rendered by JS -->
+                </div>
+            </div>
+
+            <div id="basicsView" class="problem-view basics-view" style="display:none;">
+                <div class="problem-header">
+                    <button class="nav-btn" onclick="goHome()">← Back to Basics</button>
+                    <div class="problem-title-row">
+                        <h1 id="basicsTitle"></h1>
+                        <div class="problem-meta">
+                            <span class="badge difficulty" id="basicsDifficulty"></span>
+                            <span class="badge category" id="basicsTrack"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-content" id="basicsContent">
+                    <!-- Sections rendered by JS -->
+                </div>
+            </div>
+
+            <!-- AI for Devs Detail View -->
+            <div id="devSkillsView" class="problem-view basics-view devskills-view" style="display:none;">
+                <div class="problem-header">
+                    <button class="nav-btn" onclick="goHome()">← Back to AI for Devs</button>
+                    <div class="problem-title-row">
+                        <h1 id="devSkillsTitle"></h1>
+                        <div class="problem-meta">
+                            <span class="badge difficulty" id="devSkillsDifficulty"></span>
+                            <span class="badge category" id="devSkillsTrack"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-content" id="devSkillsContent">
+                    <!-- Sections rendered by JS -->
+                </div>
+            </div>
         </main>
     </div>
 
@@ -259,6 +434,12 @@
     <script src="problems.js"></script>
     <script src="data/flashcards.js"></script>
     <script src="data/design-flashcards.js"></script>
+    <script src="data/ai-ml-problems.js"></script>
+    <script src="data/ai-ml-flashcards.js"></script>
+    <script src="data/ai-ml-basics.js"></script>
+    <script src="data/ai-ml-basics-flashcards.js"></script>
+    <script src="data/ai-dev-skills.js"></script>
+    <script src="data/ai-dev-skills-flashcards.js"></script>
     <script src="data/changelog.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>

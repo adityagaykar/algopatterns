@@ -9892,79 +9892,71 @@ int maxSumSubmatrix(vector<vector<int>>& matrix, int k) {
 },
 {
     id: 138,
-    lcNumber: 329,
-    title: "Longest Increasing Path in a Matrix",
+    lcNumber: 778,
+    title: "Swim in Rising Water",
     difficulty: "Hard",
     category: "Matrix",
-    description: "Given an `m x n` integers matrix, return the length of the longest increasing path in the matrix. From each cell, you can move in four directions (up, down, left, right). You cannot move diagonally or outside the boundary.",
+    description: "You are given an `n x n` grid where `grid[i][j]` is the elevation at cell (i, j). At time `t`, the water level is `t`. You can swim from a cell to a 4-neighbor instantly if both cells have elevation ≤ t. Return the least time `t` at which you can reach (n-1, n-1) starting from (0, 0).",
     examples: [
-        "Input: matrix = [[9,9,4],[6,6,8],[2,1,1]]\nOutput: 4\nExplanation: Longest increasing path is [1, 2, 6, 9].",
-        "Input: matrix = [[3,4,5],[3,2,6],[2,2,1]]\nOutput: 4\nExplanation: [3, 4, 5, 6] or [1, 2, 3, 4]."
+        "Input: grid = [[0,2],[1,3]]\nOutput: 3\nExplanation: Wait until t=3 so the bottom-right (elevation 3) becomes reachable.",
+        "Input: grid = [[0,1,2,3,4],[24,23,22,21,5],[12,13,14,15,16],[11,17,18,19,20],[10,9,8,7,6]]\nOutput: 16\nExplanation: The minimum-max-elevation path crosses cell with elevation 16."
     ],
     thinkingProcess: [
-        { step: "DFS from each cell", detail: "From each cell, DFS to find the longest increasing path starting there. The answer is the maximum over all cells. Naive DFS would be exponential due to revisiting." },
-        { step: "Memoization is the key", detail: "If we've already computed the longest path from cell (r,c), cache it. Next time we reach (r,c) from a different path, return the cached value. This turns exponential into polynomial." },
-        { step: "Why no visited set needed", detail: "The path must be strictly increasing. This means we can never revisit a cell (we'd need a value > current, but we came from a value < current). So there are no cycles — DFS naturally terminates." },
-        { step: "DFS with memo", detail: "`dfs(r, c)` = 1 + max(dfs(nr, nc) for valid increasing neighbors). Base case: if no increasing neighbor, return 1. Cache in a `memo[r][c]` matrix." },
-        { step: "Alternative: topological sort", detail: "The increasing constraint creates a DAG. We can find the longest path in a DAG via topological sort. Process cells with in-degree 0 first (local minima), BFS layer by layer. The number of layers = longest path." },
-        { step: "Complexity", detail: "Each cell is computed exactly once. O(m × n) total work. Space: O(m × n) for the memo table." }
+        { step: "Reframe as 'minimize the maximum on the path'", detail: "Standard shortest-path minimizes the SUM of edge weights. Here we minimize the MAX elevation along any path from start to end — a classic 'minimax path' problem." },
+        { step: "Approach 1: Dijkstra with a min-heap", detail: "Treat each cell's elevation as its 'cost'. Push (elevation, r, c) onto a min-heap, start from (grid[0][0], 0, 0). Pop the cell with the smallest 'time-to-reach', and relax neighbors using `max(current, neighbor.elevation)` instead of sum. First pop of (n-1, n-1) gives the answer." },
+        { step: "Why max instead of sum?", detail: "Once you wait until time t for the worst cell on your path, every prior cell is already swimmable. So the path's cost = MAX elevation on it, not the sum." },
+        { step: "Approach 2: Binary search on the answer", detail: "The answer t lies in [0, n²-1]. Binary search: for each candidate t, BFS/DFS using only cells with elevation ≤ t. If reachable, search lower; else search higher. O(n² · log n²) = O(n² log n)." },
+        { step: "Approach 3: Union-Find by elevation", detail: "Sort cells by elevation. Add them one by one, unioning with already-added 4-neighbors. Answer = elevation at the moment (0,0) and (n-1,n-1) become connected. Same time complexity as Dijkstra." },
+        { step: "Complexity", detail: "Dijkstra: O(n² log n). Binary search: O(n² log n). Union-Find: O(n² log n) (sorting dominates). All three are competitive — Dijkstra is the cleanest implementation." }
     ],
-    keyInsight: "DFS + memoization from each cell. The strictly-increasing constraint guarantees no cycles (implicit DAG), so no visited set needed. Cache the longest path length from each cell to avoid recomputation. Each cell is computed exactly once.",
-    approach: "1. For each cell, run DFS to find longest increasing path.\n2. Memoize results in a matrix.\n3. DFS: try all 4 neighbors that are strictly larger.\n4. `memo[r][c]` = 1 + max of neighbor results.\n5. Answer = max over all cells.",
-    solutionPython: `def longestIncreasingPath(matrix):
-    if not matrix:
-        return 0
-    m, n = len(matrix), len(matrix[0])
-    memo = [[0] * n for _ in range(m)]
-    
-    def dfs(r, c):
-        if memo[r][c]:
-            return memo[r][c]
-        
-        best = 1
-        for dr, dc in [(-1,0),(1,0),(0,-1),(0,1)]:
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < m and 0 <= nc < n and matrix[nr][nc] > matrix[r][c]:
-                best = max(best, 1 + dfs(nr, nc))
-        
-        memo[r][c] = best
-        return best
-    
-    return max(dfs(r, c) for r in range(m) for c in range(n))`,
+    keyInsight: "This is a 'minimax path' problem: minimize the MAXIMUM elevation along a path, not the sum. Dijkstra works if you replace `dist[v] = dist[u] + w(u,v)` with `dist[v] = max(dist[u], elev[v])`. The first time you pop the target, you have the answer.",
+    approach: "1. Min-heap of (cost-so-far, r, c).\n2. Push (grid[0][0], 0, 0); track visited.\n3. Pop smallest; if target, return cost.\n4. For each 4-neighbor, push (max(cost, grid[nr][nc]), nr, nc).",
+    solutionPython: `import heapq
+
+def swimInWater(grid):
+    n = len(grid)
+    visited = [[False]*n for _ in range(n)]
+    heap = [(grid[0][0], 0, 0)]
+    DIRS = [(-1,0),(1,0),(0,-1),(0,1)]
+
+    while heap:
+        t, r, c = heapq.heappop(heap)
+        if visited[r][c]:
+            continue
+        visited[r][c] = True
+        if r == n-1 and c == n-1:
+            return t
+        for dr, dc in DIRS:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < n and 0 <= nc < n and not visited[nr][nc]:
+                heapq.heappush(heap, (max(t, grid[nr][nc]), nr, nc))`,
     solutionCpp: `#include <vector>
-#include <algorithm>
+#include <queue>
 using namespace std;
 
-class Solution {
-    int m, n;
-    vector<vector<int>> memo;
+int swimInWater(vector<vector<int>>& grid) {
+    int n = grid.size();
+    vector<vector<bool>> seen(n, vector<bool>(n, false));
+    priority_queue<tuple<int,int,int>, vector<tuple<int,int,int>>, greater<>> pq;
+    pq.push({grid[0][0], 0, 0});
     int dirs[4][2] = {{-1,0},{1,0},{0,-1},{0,1}};
-    
-    int dfs(vector<vector<int>>& mat, int r, int c) {
-        if (memo[r][c]) return memo[r][c];
-        int best = 1;
+
+    while (!pq.empty()) {
+        auto [t, r, c] = pq.top(); pq.pop();
+        if (seen[r][c]) continue;
+        seen[r][c] = true;
+        if (r == n-1 && c == n-1) return t;
         for (auto& d : dirs) {
             int nr = r+d[0], nc = c+d[1];
-            if (nr>=0 && nr<m && nc>=0 && nc<n && mat[nr][nc] > mat[r][c])
-                best = max(best, 1 + dfs(mat, nr, nc));
+            if (nr>=0 && nr<n && nc>=0 && nc<n && !seen[nr][nc])
+                pq.push({max(t, grid[nr][nc]), nr, nc});
         }
-        return memo[r][c] = best;
     }
-    
-public:
-    int longestIncreasingPath(vector<vector<int>>& matrix) {
-        m = matrix.size(); n = matrix[0].size();
-        memo.assign(m, vector<int>(n, 0));
-        int ans = 0;
-        for (int r = 0; r < m; r++)
-            for (int c = 0; c < n; c++)
-                ans = max(ans, dfs(matrix, r, c));
-        return ans;
-    }
-};`,
-    timeComplexity: "O(m × n)",
-    spaceComplexity: "O(m × n)",
-    patternGuide: "Use **DFS + memoization on implicit DAG** when:\n- Matrix/graph with a monotonicity constraint (increasing/decreasing)\n- Constraint guarantees no cycles\n- Longest/shortest path in a DAG\n\nSimilar: Number of Increasing Paths in a Grid, Pacific Atlantic Water Flow"
+    return -1;
+}`,
+    timeComplexity: "O(n² log n)",
+    spaceComplexity: "O(n²)",
+    patternGuide: "Use **Dijkstra with max-relaxation (minimax path)** when:\n- Grid/graph with cost = bottleneck (max), not sum\n- 'Minimum effort' / 'minimum threshold' path problems\n- Alternative: binary search on answer + BFS, or Union-Find by sorted weight\n\nSimilar: Path with Minimum Effort, Network Delay Time, Minimum Cost Path"
 },
 {
     id: 139,
@@ -10178,77 +10170,73 @@ int largestComponentSize(vector<int>& nums) {
 },
 {
     id: 141,
-    lcNumber: 1235,
-    title: "Maximum Profit in Job Scheduling",
+    lcNumber: 1335,
+    title: "Minimum Difficulty of a Job Schedule",
     difficulty: "Hard",
     category: "Dynamic Programming",
-    description: "We have `n` jobs where every job has a start time, end time, and profit. Return the maximum profit you can take such that no two jobs in the subset overlap. If you choose a job that ends at time `t`, you can start another job at time `t`.",
+    description: "Given an array `jobDifficulty` and integer `d`, schedule the jobs over `d` days. Each day must have at least one job; jobs must be done in order. The difficulty of a day = max difficulty of its jobs. Return the minimum total difficulty (sum over days), or -1 if impossible.",
     examples: [
-        "Input: startTime = [1,2,3,3], endTime = [3,4,5,6], profit = [50,10,40,70]\nOutput: 120\nExplanation: Take jobs 1 and 4 ([1,3] profit 50 + [3,6] profit 70 = 120).",
-        "Input: startTime = [1,2,3,4,6], endTime = [3,5,10,6,9], profit = [20,20,100,70,60]\nOutput: 150"
+        "Input: jobDifficulty = [6,5,4,3,2,1], d = 2\nOutput: 7\nExplanation: Day 1 = [6,5,4,3,2] (max 6), Day 2 = [1] (max 1) → 6+1 = 7.",
+        "Input: jobDifficulty = [9,9,9], d = 4\nOutput: -1   (only 3 jobs, can't fill 4 days)",
+        "Input: jobDifficulty = [7,1,7,1,7,1], d = 3\nOutput: 15"
     ],
     thinkingProcess: [
-        { step: "Sort by end time", detail: "Sort jobs by end time. This lets us process them in chronological order and make binary decisions: include or exclude each job." },
-        { step: "DP formulation", detail: "`dp[i]` = maximum profit considering the first `i` jobs (sorted by end time). For job `i`, either:\n- Skip it: `dp[i] = dp[i-1]`\n- Take it: find the latest job `j` that ends before job `i` starts, then `dp[i] = dp[j] + profit[i]`." },
-        { step: "Finding compatible previous job", detail: "Use binary search: among jobs 0..i-1, find the rightmost job whose end time ≤ start time of job i. Since jobs are sorted by end time, binary search on end times for `start[i]`." },
-        { step: "Recurrence", detail: "`dp[i] = max(dp[i-1], dp[j] + profit[i])` where `j` = largest index with `endTime[j] ≤ startTime[i]`. If no such j exists, `dp[j] = 0`." },
-        { step: "Build the DP array", detail: "Initialize `dp[0] = profit[0]`. For i=1 to n-1: binary search for j, compute both options, take max. Final answer: `dp[n-1]`." },
-        { step: "Complexity", detail: "Sorting: O(n log n). Binary search per job: O(log n). Total: O(n log n)." }
+        { step: "Recognize the partitioning structure", detail: "We must split a sequence into `d` contiguous, non-empty groups. Cost per group = max element. Total cost = sum of group maxes. Minimize that sum. Classic 'partition array into K parts' DP." },
+        { step: "Feasibility check", detail: "If `n < d`, return -1 — we can't give every day at least one job." },
+        { step: "State definition", detail: "`dp[i][k]` = minimum total difficulty to schedule the first `i` jobs using exactly `k` days. We want `dp[n][d]`." },
+        { step: "Transition", detail: "To compute `dp[i][k]`, decide how many jobs go on day `k` — say jobs `j..i-1`. Then `dp[i][k] = min over j of dp[j][k-1] + max(jobs[j..i-1])`. j ranges so that prior days each have ≥1 job: `k-1 ≤ j ≤ i-1`." },
+        { step: "Compute the running max efficiently", detail: "For fixed `i, k`, iterate `j` from `i-1` down to `k-1` while maintaining a running `curMax = max(curMax, jobs[j])`. This makes the inner loop O(n) and total O(n² · d)." },
+        { step: "Optimization with monotonic stack", detail: "There's an O(n · d) solution using a monotonic decreasing stack to compute the contribution of each job's max range — but the O(n² d) DP is the standard interview answer and easily fits within constraints (n ≤ 300, d ≤ 10)." }
     ],
-    keyInsight: "Sort by end time. DP where for each job, binary search for the latest non-overlapping previous job. `dp[i] = max(skip=dp[i-1], take=dp[j]+profit[i])` where j is found by binary search. Classic weighted job scheduling.",
-    approach: "1. Sort jobs by end time.\n2. `dp[i]` = max profit from first i+1 jobs.\n3. For each job, binary search for last non-overlapping job.\n4. `dp[i] = max(dp[i-1], dp[j] + profit[i])`.\n5. Return dp[n-1].",
-    solutionPython: `import bisect
+    keyInsight: "Classic 'split sequence into K contiguous groups' DP: `dp[i][k] = min over split-point j of dp[j][k-1] + max(arr[j..i-1])`. Compute the inner max while iterating j right-to-left in O(1) — no separate range-max query needed.",
+    approach: "1. If n < d return -1.\n2. dp[i][k] = min schedule cost for first i jobs in k days.\n3. Transition: scan j from i-1 down to k-1, track curMax.\n4. dp[i][k] = min(dp[j][k-1] + curMax).\n5. Answer: dp[n][d].",
+    solutionPython: `def minDifficulty(jobDifficulty, d):
+    n = len(jobDifficulty)
+    if n < d:
+        return -1
 
-def jobScheduling(startTime, endTime, profit):
-    jobs = sorted(zip(endTime, startTime, profit))
-    n = len(jobs)
-    
-    dp = [0] * n
-    ends = [j[0] for j in jobs]
-    
-    dp[0] = jobs[0][2]
-    
-    for i in range(1, n):
-        # Option 1: skip this job
-        skip = dp[i - 1]
-        
-        # Option 2: take this job
-        # Binary search for latest job ending <= start of current
-        j = bisect.bisect_right(ends, jobs[i][1]) - 1
-        take = jobs[i][2] + (dp[j] if j >= 0 else 0)
-        
-        dp[i] = max(skip, take)
-    
-    return dp[n - 1]`,
+    INF = float('inf')
+    # dp[i][k] = min cost to schedule jobs[0:i] in k days
+    dp = [[INF] * (d + 1) for _ in range(n + 1)]
+    dp[0][0] = 0
+
+    for i in range(1, n + 1):
+        for k in range(1, d + 1):
+            cur_max = 0
+            # last day takes jobs[j:i]; need k-1 jobs before → j >= k-1
+            for j in range(i - 1, k - 2, -1):
+                cur_max = max(cur_max, jobDifficulty[j])
+                if dp[j][k - 1] + cur_max < dp[i][k]:
+                    dp[i][k] = dp[j][k - 1] + cur_max
+
+    return dp[n][d]`,
     solutionCpp: `#include <vector>
 #include <algorithm>
+#include <climits>
 using namespace std;
 
-int jobScheduling(vector<int>& startTime, vector<int>& endTime, vector<int>& profit) {
-    int n = startTime.size();
-    vector<int> idx(n);
-    iota(idx.begin(), idx.end(), 0);
-    sort(idx.begin(), idx.end(), [&](int a, int b) {
-        return endTime[a] < endTime[b];
-    });
-    
-    vector<int> dp(n), ends(n);
-    for (int i = 0; i < n; i++) ends[i] = endTime[idx[i]];
-    
-    dp[0] = profit[idx[0]];
-    
-    for (int i = 1; i < n; i++) {
-        int skip = dp[i-1];
-        int j = upper_bound(ends.begin(), ends.begin()+i,
-                           startTime[idx[i]]) - ends.begin() - 1;
-        int take = profit[idx[i]] + (j >= 0 ? dp[j] : 0);
-        dp[i] = max(skip, take);
+int minDifficulty(vector<int>& jobDifficulty, int d) {
+    int n = jobDifficulty.size();
+    if (n < d) return -1;
+
+    const int INF = INT_MAX / 2;
+    vector<vector<int>> dp(n + 1, vector<int>(d + 1, INF));
+    dp[0][0] = 0;
+
+    for (int i = 1; i <= n; i++) {
+        for (int k = 1; k <= d; k++) {
+            int curMax = 0;
+            for (int j = i - 1; j >= k - 1; j--) {
+                curMax = max(curMax, jobDifficulty[j]);
+                dp[i][k] = min(dp[i][k], dp[j][k - 1] + curMax);
+            }
+        }
     }
-    return dp[n-1];
+    return dp[n][d];
 }`,
-    timeComplexity: "O(n log n)",
-    spaceComplexity: "O(n)",
-    patternGuide: "Use **sort + DP + binary search** for weighted scheduling:\n- Non-overlapping intervals with weights/profits\n- Sort by end time, binary search for compatible previous\n- Classic weighted interval scheduling\n\nSimilar: Non-overlapping Intervals, Meeting Rooms, Minimum Number of Arrows"
+    timeComplexity: "O(n² · d)",
+    spaceComplexity: "O(n · d)",
+    patternGuide: "Use **partition-into-K-groups DP** when:\n- Split a sequence into K contiguous, non-empty parts\n- Cost per part is some aggregate (max/min/sum)\n- Minimize/maximize total of part costs\n- Track running aggregate while iterating split point to avoid extra log factor\n\nSimilar: Split Array Largest Sum, Palindrome Partitioning II, Allocate Mailboxes"
 },
 {
     id: 142,
@@ -10734,96 +10722,68 @@ bool isPossible(vector<int>& target) {
 },
 {
     id: 148,
-    lcNumber: 336,
-    title: "Palindrome Pairs",
+    lcNumber: 214,
+    title: "Shortest Palindrome",
     difficulty: "Hard",
     category: "String",
-    description: "Given a list of unique words, return all pairs of indices `(i, j)` such that the concatenation of `words[i] + words[j]` is a palindrome.",
+    description: "Given a string `s`, you can convert it to a palindrome by adding characters in front of it. Return the SHORTEST such palindrome.",
     examples: [
-        "Input: words = [\"abcd\",\"dcba\",\"lls\",\"s\",\"sssll\"]\nOutput: [[0,1],[1,0],[3,2],[2,4]]\nExplanation: \"abcddcba\", \"dcbaabcd\", \"slls\", \"llssssll\" are palindromes.",
-        "Input: words = [\"bat\",\"tab\",\"cat\"]\nOutput: [[0,1],[1,0]]"
+        "Input: s = \"aacecaaa\"\nOutput: \"aaacecaaa\"\nExplanation: prepend a single 'a'.",
+        "Input: s = \"abcd\"\nOutput: \"dcbabcd\"\nExplanation: prepend 'dcb'."
     ],
     thinkingProcess: [
-        { step: "Brute force: O(n² × k)", detail: "Try all pairs, check if concatenation is palindrome. With n up to 5000 and word length up to 300, this is 5000² × 300 ≈ 7.5 billion — too slow." },
-        { step: "Think about when two words form a palindrome", detail: "words[i] + words[j] is a palindrome in 3 cases:\n1. words[j] is the reverse of words[i] (same length)\n2. words[i] is longer: words[i] = prefix + middle, where reverse(prefix) == words[j] and middle is a palindrome\n3. words[j] is longer: words[j] = middle + suffix, where reverse(suffix) == words[i] and middle is a palindrome" },
-        { step: "Use a hash map", detail: "Store all words in a map: word → index. For each word, check: (1) if its reverse exists, (2) for each prefix that is a palindrome, if the reverse of the remaining suffix exists, (3) for each suffix that is a palindrome, if the reverse of the remaining prefix exists." },
-        { step: "Enumerate splits", detail: "For word w of length L: for each split point k (0 to L):\n- If w[0:k] is palindrome and reverse(w[k:]) is in the map → pair found (other word goes first)\n- If w[k:] is palindrome and reverse(w[0:k]) is in the map → pair found (other word goes second)" },
-        { step: "Avoid duplicates and self-pairs", detail: "Make sure i ≠ j. The split at k=0 and k=L handle the equal-length case. Be careful not to double-count." },
-        { step: "Complexity", detail: "For each word: O(L) splits, each needs O(L) palindrome check and O(L) hash lookup = O(L²) per word. Total: O(n × L²). Much better than O(n² × L)." }
+        { step: "Reformulate the problem", detail: "To make `s` a palindrome by prepending the FEWEST characters, we want to find the LONGEST palindromic prefix of `s`. Whatever follows it is the 'tail' — we mirror that tail and prepend it." },
+        { step: "Naive: shrink from the right", detail: "For length L = len(s) down to 0, check if s[0:L] is a palindrome. The first hit is our longest palindromic prefix. O(n²) total — works but slow on n=50000." },
+        { step: "KMP insight: build a string that encodes both halves", detail: "Construct `T = s + '#' + reverse(s)`. Run the KMP failure (LPS) function on T. The final LPS value tells us the longest proper prefix of T that is also a suffix — and by construction, this equals the longest prefix of `s` that is a palindrome." },
+        { step: "Why the separator '#' matters", detail: "Without it, the LPS could 'overshoot' and match characters that span both halves, giving a wrong answer. The separator (any char not in s) ensures the matched prefix lies entirely within `s` and the matched suffix lies entirely within `reverse(s)`." },
+        { step: "Construct the answer", detail: "Let `k` = length of longest palindromic prefix found. The remaining suffix `s[k:]` needs to be mirrored and prepended: `answer = reverse(s[k:]) + s`. Total length: `n + (n - k)`." },
+        { step: "Complexity", detail: "Building T is O(n). Computing LPS is O(n). Total time and space O(n) — optimal." }
     ],
-    keyInsight: "For each word, check all its prefixes and suffixes. If a prefix is a palindrome and the reverse of the remaining suffix exists in the word map, it forms a palindrome pair. Similarly for suffixes. This reduces O(n²k) to O(nk²) using a hash map for reverse lookups.",
-    approach: "1. Build map: word → index.\n2. For each word, for each split point:\n   - If left is palindrome and reverse(right) in map → valid pair\n   - If right is palindrome and reverse(left) in map → valid pair\n3. Handle equal-length reverse pairs.\n4. Avoid self-pairs and duplicates.",
-    solutionPython: `def palindromePairs(words):
-    word_map = {w: i for i, w in enumerate(words)}
-    result = []
-    
-    def is_pal(s):
-        return s == s[::-1]
-    
-    for i, word in enumerate(words):
-        n = len(word)
-        for k in range(n + 1):
-            prefix = word[:k]
-            suffix = word[k:]
-            
-            # Case 1: prefix is palindrome, reverse(suffix) exists
-            # reverse(suffix) + word is palindrome
-            if is_pal(prefix):
-                rev_suf = suffix[::-1]
-                if rev_suf in word_map and word_map[rev_suf] != i:
-                    result.append([word_map[rev_suf], i])
-            
-            # Case 2: suffix is palindrome, reverse(prefix) exists
-            # word + reverse(prefix) is palindrome
-            # Only when k < n to avoid duplicate with Case 1 at k=n
-            if k < n and is_pal(suffix):
-                rev_pre = prefix[::-1]
-                if rev_pre in word_map and word_map[rev_pre] != i:
-                    result.append([i, word_map[rev_pre]])
-    
-    return result`,
-    solutionCpp: `#include <vector>
-#include <string>
-#include <unordered_map>
-#include <algorithm>
+    keyInsight: "Find the LONGEST palindromic PREFIX of s, then mirror the rest and prepend. Use KMP on the combined string `s + '#' + reverse(s)` — its final LPS value equals the length of that longest palindromic prefix in O(n) time.",
+    approach: "1. Build T = s + '#' + reverse(s).\n2. Compute LPS array of T via KMP.\n3. k = LPS[len(T)-1] = length of longest palindromic prefix of s.\n4. Return reverse(s[k:]) + s.",
+    solutionPython: `def shortestPalindrome(s):
+    if not s:
+        return s
+    rev = s[::-1]
+    T = s + '#' + rev
+    n = len(T)
+
+    # KMP longest-prefix-suffix array
+    lps = [0] * n
+    for i in range(1, n):
+        j = lps[i - 1]
+        while j > 0 and T[i] != T[j]:
+            j = lps[j - 1]
+        if T[i] == T[j]:
+            j += 1
+        lps[i] = j
+
+    k = lps[-1]              # longest palindromic prefix length
+    return rev[: len(s) - k] + s`,
+    solutionCpp: `#include <string>
+#include <vector>
 using namespace std;
 
-vector<vector<int>> palindromePairs(vector<string>& words) {
-    unordered_map<string, int> mp;
-    for (int i = 0; i < (int)words.size(); i++) mp[words[i]] = i;
-    
-    auto isPal = [](const string& s) {
-        int l = 0, r = s.size() - 1;
-        while (l < r) if (s[l++] != s[r--]) return false;
-        return true;
-    };
-    
-    vector<vector<int>> result;
-    for (int i = 0; i < (int)words.size(); i++) {
-        int n = words[i].size();
-        for (int k = 0; k <= n; k++) {
-            string prefix = words[i].substr(0, k);
-            string suffix = words[i].substr(k);
-            
-            if (isPal(prefix)) {
-                string rev = suffix;
-                reverse(rev.begin(), rev.end());
-                if (mp.count(rev) && mp[rev] != i)
-                    result.push_back({mp[rev], i});
-            }
-            if (k < n && isPal(suffix)) {
-                string rev = prefix;
-                reverse(rev.begin(), rev.end());
-                if (mp.count(rev) && mp[rev] != i)
-                    result.push_back({i, mp[rev]});
-            }
-        }
+string shortestPalindrome(string s) {
+    if (s.empty()) return s;
+    string rev(s.rbegin(), s.rend());
+    string T = s + "#" + rev;
+    int n = T.size();
+
+    vector<int> lps(n, 0);
+    for (int i = 1; i < n; i++) {
+        int j = lps[i - 1];
+        while (j > 0 && T[i] != T[j]) j = lps[j - 1];
+        if (T[i] == T[j]) j++;
+        lps[i] = j;
     }
-    return result;
+
+    int k = lps[n - 1];
+    return rev.substr(0, s.size() - k) + s;
 }`,
-    timeComplexity: "O(n × k²) where k = max word length",
-    spaceComplexity: "O(n × k)",
-    patternGuide: "Use **hash map + prefix/suffix palindrome checking** when:\n- Finding pairs with combined string properties\n- Reverse lookup eliminates O(n²) comparison\n- Decompose string into parts with known properties\n\nSimilar: Longest Palindromic Substring, Shortest Palindrome"
+    timeComplexity: "O(n)",
+    spaceComplexity: "O(n)",
+    patternGuide: "Use **KMP failure function on s + '#' + reverse(s)** when:\n- You need the longest palindromic PREFIX (or suffix) of a string\n- Want O(n) instead of O(n²) palindrome scanning\n- Pattern matching with implicit reflection\n\nSimilar: Longest Happy Prefix (LC 1392), Find the Index of the First Occurrence (KMP), Longest Palindromic Substring"
 },
 {
     id: 149,
@@ -10976,5 +10936,776 @@ int minSwapsCouples(vector<int>& row) {
     timeComplexity: "O(n)",
     spaceComplexity: "O(n)",
     patternGuide: "Use **greedy fix-in-place with position map** when:\n- Pairing/matching elements that should be adjacent\n- Each swap fixes at least one pair\n- Position map enables O(1) partner lookup\n\nSimilar: Minimum Swaps to Sort, First Missing Positive, Cyclic Sort"
+},
+// ============================================================
+// CATEGORY: DESIGN — Additional Design Patterns (Problems 151-160)
+// ============================================================
+{
+    id: 151,
+    lcNumber: 706,
+    title: "Design HashMap",
+    difficulty: "Easy",
+    category: "Design",
+    description: "Design a HashMap without using any built-in hash table libraries. Implement `put(key, value)`, `get(key)` (returns -1 if not found), and `remove(key)`.",
+    examples: [
+        "put(1,1), put(2,2), get(1)→1, get(3)→-1, put(2,1), get(2)→1, remove(2), get(2)→-1"
+    ],
+    thinkingProcess: [
+        { step: "Core idea: array + hash function", detail: "Allocate a fixed array of buckets. Use `hash(key) = key % BUCKETS` to map a key to a bucket index. The challenge: collisions — two different keys may map to the same bucket." },
+        { step: "Resolve collisions via separate chaining", detail: "Each bucket stores a list (linked list or array) of `(key, value)` pairs. To put/get/remove, hash to the bucket, then linearly scan that bucket's list for the key." },
+        { step: "Choosing bucket count", detail: "Pick a prime number (e.g., 769) to spread keys evenly and reduce clustering. Load factor ≈ N/buckets stays low → O(1) average per operation." },
+        { step: "Put logic", detail: "Hash key → walk bucket. If key exists, update value. Else append new pair to the bucket." },
+        { step: "Get & remove logic", detail: "Hash key → walk bucket. Return value if found (else -1). Remove: splice the matching pair out of the bucket list." },
+        { step: "Alternative: open addressing", detail: "Could also use linear/quadratic probing with a flat array — fewer pointers but harder to delete (need tombstones). Separate chaining is simpler and the standard interview answer." }
+    ],
+    keyInsight: "Hash function maps keys to a fixed array of buckets; resolve collisions with separate chaining (a list per bucket). Hash → bucket → linear scan. With a prime bucket count and a good hash, all operations are O(1) average.",
+    approach: "1. Array of `BUCKETS` lists (separate chaining).\n2. `hash(k) = k % BUCKETS`.\n3. put/get/remove: hash, then scan that bucket's list.",
+    solutionPython: `class MyHashMap:
+    def __init__(self):
+        self.BUCKETS = 769  # prime
+        self.buckets = [[] for _ in range(self.BUCKETS)]
+
+    def _bucket(self, key):
+        return self.buckets[key % self.BUCKETS]
+
+    def put(self, key, value):
+        bucket = self._bucket(key)
+        for i, (k, _) in enumerate(bucket):
+            if k == key:
+                bucket[i] = (key, value)
+                return
+        bucket.append((key, value))
+
+    def get(self, key):
+        for k, v in self._bucket(key):
+            if k == key:
+                return v
+        return -1
+
+    def remove(self, key):
+        bucket = self._bucket(key)
+        for i, (k, _) in enumerate(bucket):
+            if k == key:
+                bucket.pop(i)
+                return`,
+    solutionCpp: `class MyHashMap {
+    static const int BUCKETS = 769;
+    vector<list<pair<int,int>>> buckets;
+
+    list<pair<int,int>>& bucket(int key) { return buckets[key % BUCKETS]; }
+public:
+    MyHashMap() : buckets(BUCKETS) {}
+
+    void put(int key, int value) {
+        for (auto& kv : bucket(key))
+            if (kv.first == key) { kv.second = value; return; }
+        bucket(key).push_back({key, value});
+    }
+
+    int get(int key) {
+        for (auto& kv : bucket(key))
+            if (kv.first == key) return kv.second;
+        return -1;
+    }
+
+    void remove(int key) {
+        auto& b = bucket(key);
+        for (auto it = b.begin(); it != b.end(); ++it)
+            if (it->first == key) { b.erase(it); return; }
+    }
+};`,
+    timeComplexity: "O(1) average, O(N) worst per op",
+    spaceComplexity: "O(N + BUCKETS)",
+    patternGuide: "Use **separate chaining hash table** when:\n- Building hash map / set from scratch\n- Need predictable O(1) average with simple deletion\n- Collisions are rare with a good hash + load factor\n\nSimilar: Design HashSet (LC 705), LRU Cache, Design HashMap with TTL"
+},
+{
+    id: 152,
+    lcNumber: 1472,
+    title: "Design Browser History",
+    difficulty: "Medium",
+    category: "Design",
+    description: "Implement a browser history with: `visit(url)` (clears forward history), `back(steps)` (go back up to `steps` pages, return current URL), `forward(steps)` (go forward up to `steps` pages, return current URL).",
+    examples: [
+        "BrowserHistory(\"leet.com\"), visit(\"google.com\"), visit(\"fb.com\"), visit(\"yt.com\")\nback(1) → \"fb.com\"\nback(1) → \"google.com\"\nforward(1) → \"fb.com\"\nvisit(\"linkedin.com\") (clears forward stack)\nforward(2) → \"linkedin.com\" (no forward history)\nback(2) → \"google.com\"\nback(7) → \"leet.com\""
+    ],
+    thinkingProcess: [
+        { step: "Model history as a tape with a cursor", detail: "Visualize a sequential list of URLs with a pointer to the current page. `back`/`forward` move the pointer. `visit` appends a new URL just after the cursor and discards everything beyond." },
+        { step: "Why a single array beats two stacks here", detail: "Two-stack solution works (back-stack + forward-stack), but `back(steps)` and `forward(steps)` would require popping/pushing many elements. With an array + index pointer, `back/forward` are O(1)." },
+        { step: "visit invalidates forward history", detail: "When `visit(url)` is called from position `i`, set `history[i+1] = url` and truncate length to `i+2`. This mirrors real browsers — once you navigate to a new page, the forward history is gone." },
+        { step: "back/forward bound checks", detail: "`back(steps)`: `i = max(0, i - steps)`. `forward(steps)`: `i = min(len-1, i + steps)`. Return `history[i]`." },
+        { step: "Memory note", detail: "We don't actually pop elements on visit — we just shrink the logical length. Could either truncate the list (Python `del`) or maintain a `size` field for amortized speed." }
+    ],
+    keyInsight: "Treat history as a single array + cursor index. `visit` overwrites the slot after the cursor and shrinks the logical size (drops forward history). `back`/`forward` just clamp the index — O(1) regardless of step count, beating the two-stack approach.",
+    approach: "1. `history[]` + `cur` index + `size`.\n2. `visit`: `history[++cur] = url; size = cur + 1`.\n3. `back(s)`: `cur = max(0, cur - s)`.\n4. `forward(s)`: `cur = min(size-1, cur + s)`.",
+    solutionPython: `class BrowserHistory:
+    def __init__(self, homepage):
+        self.history = [homepage]
+        self.cur = 0
+        self.size = 1
+
+    def visit(self, url):
+        self.cur += 1
+        if self.cur < len(self.history):
+            self.history[self.cur] = url
+        else:
+            self.history.append(url)
+        self.size = self.cur + 1  # drop forward history
+
+    def back(self, steps):
+        self.cur = max(0, self.cur - steps)
+        return self.history[self.cur]
+
+    def forward(self, steps):
+        self.cur = min(self.size - 1, self.cur + steps)
+        return self.history[self.cur]`,
+    solutionCpp: `class BrowserHistory {
+    vector<string> history;
+    int cur = 0, sz = 1;
+public:
+    BrowserHistory(string homepage) : history{homepage} {}
+
+    void visit(string url) {
+        ++cur;
+        if (cur < (int)history.size()) history[cur] = url;
+        else history.push_back(url);
+        sz = cur + 1;
+    }
+
+    string back(int steps) {
+        cur = max(0, cur - steps);
+        return history[cur];
+    }
+
+    string forward(int steps) {
+        cur = min(sz - 1, cur + steps);
+        return history[cur];
+    }
+};`,
+    timeComplexity: "O(1) per op",
+    spaceComplexity: "O(N) total URLs",
+    patternGuide: "Use **array + cursor pointer** when:\n- Bidirectional navigation through a sequence\n- Branch-and-truncate semantics (undo/redo, browser nav)\n- Step counts may be large → avoid stack push/pop loops\n\nSimilar: Design Text Editor, Implement Undo/Redo, Memento Pattern"
+},
+{
+    id: 153,
+    lcNumber: 855,
+    title: "Exam Room",
+    difficulty: "Medium",
+    category: "Design",
+    description: "There are `n` seats in a row (0 to n-1). Implement: `seat()` — seat a student so the distance to the closest other student is MAXIMIZED, breaking ties by smallest index (seat 0 if room is empty); `leave(p)` — the student in seat p leaves.",
+    examples: [
+        "ExamRoom(10)\nseat() → 0\nseat() → 9      // farthest from 0\nseat() → 4      // middle of [0, 9]\nseat() → 2      // middle of [0, 4]\nleave(4)\nseat() → 5      // middle of [2, 9]"
+    ],
+    thinkingProcess: [
+        { step: "Model occupied seats as a sorted set", detail: "What matters for `seat()` is the GAPS between occupied seats — specifically, the gap that yields the largest 'distance to nearest neighbor'. Maintain occupied seats in a sorted structure for O(log n) insertion / deletion / neighbor queries." },
+        { step: "Compute the best new position", detail: "Walk through consecutive occupied pairs (a, b). The midpoint `(a+b)/2` gives a candidate distance `(b-a)/2`. Also consider the two endpoints: distance from seat 0 to the first occupied, and from the last occupied to seat n-1." },
+        { step: "Tie-break by smallest index", detail: "If two candidates give the same distance, pick the one with the smaller seat index. Iterate left-to-right and only update when STRICTLY better — the first one wins ties naturally." },
+        { step: "Edge case: empty room", detail: "If no one is seated, return seat 0 (problem rule: prefer smallest index)." },
+        { step: "leave(p) is trivial", detail: "Just remove `p` from the sorted set — O(log n) with TreeSet / SortedList." },
+        { step: "Complexity", detail: "`seat()` walks all gaps in the sorted set: O(K) where K = currently seated. `leave()` is O(log K). Total worst-case O(N²) over N seats — acceptable for typical constraints. A heap-of-gaps version reaches O(log N) per op but needs lazy deletion." }
+    ],
+    keyInsight: "Maintain occupied seats in a SortedList. For `seat()`, scan adjacent occupied pairs and compute candidate distances — including the two endpoints (seat 0 and seat n-1). Pick the position with maximum distance, breaking ties by smallest index. `leave()` is just a remove.",
+    approach: "1. SortedList `seats` of occupied positions.\n2. seat(): if empty → return 0. Else compute best candidate from endpoints + gap midpoints, insert and return.\n3. leave(p): seats.remove(p).",
+    solutionPython: `from sortedcontainers import SortedList
+
+class ExamRoom:
+    def __init__(self, n):
+        self.n = n
+        self.seats = SortedList()
+
+    def seat(self):
+        if not self.seats:
+            self.seats.add(0)
+            return 0
+
+        # Candidate 1: seat 0 (distance to first occupied)
+        best_dist = self.seats[0]
+        best_pos = 0
+
+        # Candidate 2: midpoints between adjacent occupied seats
+        for i in range(len(self.seats) - 1):
+            a, b = self.seats[i], self.seats[i + 1]
+            d = (b - a) // 2
+            if d > best_dist:
+                best_dist = d
+                best_pos = a + d
+
+        # Candidate 3: last seat (distance from last occupied)
+        if (self.n - 1) - self.seats[-1] > best_dist:
+            best_pos = self.n - 1
+
+        self.seats.add(best_pos)
+        return best_pos
+
+    def leave(self, p):
+        self.seats.remove(p)`,
+    solutionCpp: `class ExamRoom {
+    int n;
+    set<int> seats;
+public:
+    ExamRoom(int n) : n(n) {}
+
+    int seat() {
+        if (seats.empty()) { seats.insert(0); return 0; }
+
+        int bestDist = *seats.begin();   // distance from 0
+        int bestPos = 0;
+
+        int prev = -1;
+        for (int s : seats) {
+            if (prev != -1) {
+                int d = (s - prev) / 2;
+                if (d > bestDist) { bestDist = d; bestPos = prev + d; }
+            }
+            prev = s;
+        }
+
+        if ((n - 1) - *seats.rbegin() > bestDist) bestPos = n - 1;
+
+        seats.insert(bestPos);
+        return bestPos;
+    }
+
+    void leave(int p) { seats.erase(p); }
+};`,
+    timeComplexity: "O(K) seat, O(log K) leave (K = currently seated)",
+    spaceComplexity: "O(K)",
+    patternGuide: "Use **sorted set of occupied positions** when:\n- Need to maximize/minimize distance to nearest neighbor\n- Insert/remove single points and query gaps\n- Endpoint cases must be considered separately\n\nSimilar: My Calendar I/II/III, Range Module, Seat Reservation Manager"
+},
+{
+    id: 154,
+    lcNumber: 362,
+    title: "Design Hit Counter",
+    difficulty: "Medium",
+    category: "Design",
+    description: "Design a hit counter that supports `hit(timestamp)` and `getHits(timestamp)` returning the number of hits in the past 5 minutes (300 seconds, inclusive of `timestamp`). Hits arrive in chronological order.",
+    examples: [
+        "hit(1), hit(2), hit(3)\ngetHits(4) → 3\nhit(300)\ngetHits(300) → 4\ngetHits(301) → 3 (hit at t=1 expired)"
+    ],
+    thinkingProcess: [
+        { step: "Naive: queue of timestamps", detail: "Push each hit's timestamp on a queue. On `getHits(t)`, pop from the front while front ≤ t-300. Return queue size. Works but uses O(N) space if many hits per second." },
+        { step: "Bucketed approach (interview-preferred)", detail: "Allocate two parallel arrays of size 300: `times[i]` = the latest second mapped to bucket i (`t % 300`), `counts[i]` = hits in that bucket. This gives O(1) memory regardless of hit volume." },
+        { step: "hit(t) logic", detail: "Compute `i = t % 300`. If `times[i] != t`, this slot is stale — overwrite with `times[i] = t, counts[i] = 1`. Else increment `counts[i]`." },
+        { step: "getHits(t) logic", detail: "Sum `counts[i]` for every bucket where `t - times[i] < 300` (still within the 5-minute window). Bucket with `times[i] == t - 300 + 1` … `t` are valid; older are stale." },
+        { step: "Why this works", detail: "Each second maps to exactly one bucket. As time advances past a bucket's owner second by 300+, the next hit at that index simply overwrites it — natural circular buffer with lazy invalidation. Constant time, constant space." },
+        { step: "Concurrency follow-up", detail: "Interviewer often asks: what if hits come from many threads? Add a lock per bucket, or use atomic counters. For very high QPS, shard the counter by thread ID." }
+    ],
+    keyInsight: "Use two fixed-size arrays of length 300 indexed by `t % 300` — one stores the latest second written to that slot, the other its hit count. Old buckets are lazily overwritten on next hit. O(1) time, O(300) space, regardless of hit frequency.",
+    approach: "1. `times[300]`, `counts[300]`.\n2. hit(t): i = t%300; if times[i]≠t reset, else ++counts[i].\n3. getHits(t): sum counts[i] where t-times[i] < 300.",
+    solutionPython: `class HitCounter:
+    def __init__(self):
+        self.times = [0] * 300
+        self.counts = [0] * 300
+
+    def hit(self, timestamp):
+        i = timestamp % 300
+        if self.times[i] != timestamp:
+            self.times[i] = timestamp
+            self.counts[i] = 1
+        else:
+            self.counts[i] += 1
+
+    def getHits(self, timestamp):
+        return sum(c for t, c in zip(self.times, self.counts)
+                   if timestamp - t < 300)`,
+    solutionCpp: `class HitCounter {
+    vector<int> times, counts;
+public:
+    HitCounter() : times(300, 0), counts(300, 0) {}
+
+    void hit(int timestamp) {
+        int i = timestamp % 300;
+        if (times[i] != timestamp) { times[i] = timestamp; counts[i] = 1; }
+        else                       { counts[i]++; }
+    }
+
+    int getHits(int timestamp) {
+        int total = 0;
+        for (int i = 0; i < 300; i++)
+            if (timestamp - times[i] < 300) total += counts[i];
+        return total;
+    }
+};`,
+    timeComplexity: "O(1) hit, O(300) getHits",
+    spaceComplexity: "O(300)",
+    patternGuide: "Use **bucketed circular buffer with lazy invalidation** when:\n- Sliding-window count over fixed time horizon\n- Need bounded memory regardless of event volume\n- Each time unit has a deterministic slot\n\nSimilar: Logger Rate Limiter, Sliding Window Rate Limiter, Time-Series Rolling Stats"
+},
+{
+    id: 155,
+    lcNumber: 379,
+    title: "Design Phone Directory",
+    difficulty: "Medium",
+    category: "Design",
+    description: "Design a phone directory with `maxNumbers` slots. Implement `get()` (provide an unused number, -1 if none), `check(number)` (true if available), and `release(number)` (return it to the pool).",
+    examples: [
+        "PhoneDirectory(3)\nget() → 0, get() → 1, check(2) → true, get() → 2\ncheck(2) → false, release(2), check(2) → true"
+    ],
+    thinkingProcess: [
+        { step: "What operations does this resemble?", detail: "An object pool: a fixed set of resources (numbers) checked out and returned. `get` should be O(1), `check` should be O(1), `release` should be O(1)." },
+        { step: "Naive: boolean array", detail: "`available[i]` = true/false. `get` scans for the first free slot → O(N). Too slow if `get` is hot." },
+        { step: "Pool of available IDs (queue/stack)", detail: "Maintain a `Set` of free numbers (for O(1) `check`) plus a `Queue` (or `Stack`) of free numbers (for O(1) `get`). On `release`, push back into both." },
+        { step: "get / check / release", detail: "get: pop from queue, remove from set, return. check: set.contains(n). release: only re-add if not already free (idempotent guard)." },
+        { step: "Why both a set and a queue", detail: "The queue gives O(1) 'pick any free one'; the set gives O(1) membership. A single `LinkedHashSet` could combine both — interviewers love that follow-up." }
+    ],
+    keyInsight: "Treat the directory as an object pool. Maintain a queue of free numbers (for O(1) acquisition) AND a set of free numbers (for O(1) membership / idempotent release). All three operations become O(1).",
+    approach: "1. Initialize queue + set with [0..maxNumbers-1].\n2. get: dequeue, set.remove, return.\n3. check: set.contains(n).\n4. release: if n not in set → enqueue + add.",
+    solutionPython: `from collections import deque
+
+class PhoneDirectory:
+    def __init__(self, maxNumbers):
+        self.available = set(range(maxNumbers))
+        self.queue = deque(range(maxNumbers))
+
+    def get(self):
+        while self.queue and self.queue[0] not in self.available:
+            self.queue.popleft()  # skip stale
+        if not self.queue:
+            return -1
+        n = self.queue.popleft()
+        self.available.remove(n)
+        return n
+
+    def check(self, number):
+        return number in self.available
+
+    def release(self, number):
+        if number not in self.available:
+            self.available.add(number)
+            self.queue.append(number)`,
+    solutionCpp: `class PhoneDirectory {
+    unordered_set<int> available;
+    queue<int> q;
+public:
+    PhoneDirectory(int maxNumbers) {
+        for (int i = 0; i < maxNumbers; i++) {
+            available.insert(i);
+            q.push(i);
+        }
+    }
+
+    int get() {
+        while (!q.empty() && !available.count(q.front())) q.pop();
+        if (q.empty()) return -1;
+        int n = q.front(); q.pop();
+        available.erase(n);
+        return n;
+    }
+
+    bool check(int number) { return available.count(number) > 0; }
+
+    void release(int number) {
+        if (!available.count(number)) {
+            available.insert(number);
+            q.push(number);
+        }
+    }
+};`,
+    timeComplexity: "O(1) amortized per op",
+    spaceComplexity: "O(maxNumbers)",
+    patternGuide: "Use **object pool (set + queue)** when:\n- Allocating from a fixed pool of reusable resources\n- Need O(1) acquire, O(1) release, O(1) check\n- Common in connection pools, ID generators, port allocators\n\nSimilar: SnapshotArray, Encode/Decode TinyURL, Connection Pool"
+},
+{
+    id: 156,
+    lcNumber: 353,
+    title: "Design Snake Game",
+    difficulty: "Medium",
+    category: "Design",
+    description: "Design Snake. The game has width × height cells, a list of `food` positions (consumed in order), and a single `move(direction)` method returning the score, or -1 on game over. Snake grows by 1 after eating food. Game over on hitting wall or itself.",
+    examples: [
+        "SnakeGame(3, 2, [[1,2],[0,1]])\nmove(\"R\") → 0\nmove(\"D\") → 0\nmove(\"R\") → 1   // eats first food\nmove(\"U\") → 1\nmove(\"L\") → 2   // eats second\nmove(\"U\") → -1  // hits wall"
+    ],
+    thinkingProcess: [
+        { step: "Represent the snake", detail: "A `deque` of cells from head to tail. The head is the front; the tail is the back. Each move pushes a new head; if no food, pop the tail. If food, keep the tail (snake grows)." },
+        { step: "Compute new head", detail: "Direction → (dr, dc). New head = (head.r + dr, head.c + dc). Out of bounds → game over." },
+        { step: "Self-collision check (the trick)", detail: "Check whether the new head collides with any cell in the body — but EXCLUDE the current tail, because if no food is eaten the tail will move away just in time. Use a hash set of body cells for O(1) lookup." },
+        { step: "Food handling", detail: "Maintain a `foodIdx` pointer. If `newHead == food[foodIdx]`, increment foodIdx, score++, grow (don't pop tail). Else, pop tail (snake moves)." },
+        { step: "Why deque + set", detail: "Deque gives O(1) push-front/pop-back for the snake. Set gives O(1) self-collision detection. Without the set, collision check is O(N) per move — too slow for tight grids." }
+    ],
+    keyInsight: "Model snake as a deque (head ⇆ tail) AND mirror its body in a hash set for O(1) collision checks. On each move, push new head; pop tail unless food is eaten. Crucial subtlety: ignore the current tail when checking self-collision — it'll vacate that cell unless we're growing.",
+    approach: "1. deque snake + set body + foodIdx + score.\n2. move(d): compute new head; check walls.\n3. Eat food → grow; else pop tail.\n4. Check self-collision against body (excluding tail when not growing).",
+    solutionPython: `from collections import deque
+
+class SnakeGame:
+    DIRS = {"U": (-1, 0), "D": (1, 0), "L": (0, -1), "R": (0, 1)}
+
+    def __init__(self, width, height, food):
+        self.w, self.h = width, height
+        self.food = food
+        self.fi = 0
+        self.snake = deque([(0, 0)])
+        self.body = {(0, 0)}
+        self.score = 0
+
+    def move(self, direction):
+        dr, dc = self.DIRS[direction]
+        hr, hc = self.snake[0]
+        nr, nc = hr + dr, hc + dc
+
+        # Wall collision
+        if not (0 <= nr < self.h and 0 <= nc < self.w):
+            return -1
+
+        # Will we eat food this step?
+        eats = self.fi < len(self.food) and [nr, nc] == self.food[self.fi]
+
+        # Tail will vacate iff not eating
+        tail = self.snake[-1]
+        if not eats:
+            self.snake.pop()
+            self.body.discard(tail)
+
+        # Self-collision check after tail removed
+        if (nr, nc) in self.body:
+            return -1
+
+        self.snake.appendleft((nr, nc))
+        self.body.add((nr, nc))
+
+        if eats:
+            self.fi += 1
+            self.score += 1
+        return self.score`,
+    solutionCpp: `class SnakeGame {
+    int w, h, fi = 0, score = 0;
+    vector<vector<int>> food;
+    deque<pair<int,int>> snake;
+    set<pair<int,int>> body;
+public:
+    SnakeGame(int width, int height, vector<vector<int>>& food)
+        : w(width), h(height), food(food) {
+        snake.push_back({0,0});
+        body.insert({0,0});
+    }
+
+    int move(string direction) {
+        static unordered_map<char, pair<int,int>> dirs = {
+            {'U',{-1,0}}, {'D',{1,0}}, {'L',{0,-1}}, {'R',{0,1}}
+        };
+        auto [dr, dc] = dirs[direction[0]];
+        auto [hr, hc] = snake.front();
+        int nr = hr + dr, nc = hc + dc;
+        if (nr < 0 || nr >= h || nc < 0 || nc >= w) return -1;
+
+        bool eats = fi < (int)food.size() &&
+                    food[fi][0] == nr && food[fi][1] == nc;
+
+        auto tail = snake.back();
+        if (!eats) { snake.pop_back(); body.erase(tail); }
+
+        if (body.count({nr, nc})) return -1;
+
+        snake.push_front({nr, nc});
+        body.insert({nr, nc});
+        if (eats) { fi++; score++; }
+        return score;
+    }
+};`,
+    timeComplexity: "O(1) per move",
+    spaceComplexity: "O(snake length)",
+    patternGuide: "Use **deque + mirrored hash set** when:\n- Sequential structure with frequent head/tail mutation\n- Need O(1) membership in a dynamically changing set\n- Game-state simulation with collision checks\n\nSimilar: LRU Cache, Sliding Window Median, Tail-recursive simulation"
+},
+{
+    id: 157,
+    lcNumber: 1797,
+    title: "Design Authentication Manager",
+    difficulty: "Medium",
+    category: "Design",
+    description: "A token expires `timeToLive` seconds after creation/renewal. Implement `generate(tokenId, currentTime)`, `renew(tokenId, currentTime)` (refresh expiry if not yet expired), and `countUnexpiredTokens(currentTime)`.",
+    examples: [
+        "AuthenticationManager(5)\nrenew(\"aaa\", 1)        // no-op (token doesn't exist)\ngenerate(\"aaa\", 2)     // expires at 7\ncountUnexpired(6) → 1\ngenerate(\"bbb\", 7)     // expires at 12\nrenew(\"aaa\", 8)        // already expired (8 ≥ 7) → no-op\nrenew(\"bbb\", 10)       // refresh; expires at 15\ncountUnexpired(15) → 0"
+    ],
+    thinkingProcess: [
+        { step: "Each token has a single piece of state: its expiry time", detail: "Store `tokens: id → expiryTime`. `generate` sets `expiry = currentTime + ttl`. `renew` checks the existing expiry and refreshes — but only if `currentTime < expiry`." },
+        { step: "Lazy vs eager expiration", detail: "Eager: schedule a timer per token to delete on expiry — overkill, hard to scale. Lazy: never proactively delete; just compare expiry to currentTime when queried. Standard pattern for TTL caches." },
+        { step: "countUnexpiredTokens — naive", detail: "Scan all tokens, count those with `expiry > currentTime`. O(N). Often acceptable, and the official solution." },
+        { step: "Cleanup to bound memory", detail: "We can opportunistically delete expired tokens during the count to free memory: iterate, if expired drop it, else count it. Trades one extra pass for unbounded growth prevention." },
+        { step: "Optimize with TreeMap (follow-up)", detail: "Group tokens by expiry time using a sorted map: `expiry → set of tokenIds`. `countUnexpiredTokens(t)` then sums sizes of buckets with `expiry > t` (or computes `total - sum of expired buckets` and trims). Lets us delete all expired entries at once. Useful when N is huge but rolling window is short." }
+    ],
+    keyInsight: "Lazy TTL: store only the expiry time per token, never run a timer. Compare to `currentTime` on read. Renew is a no-op if `currentTime >= expiry`. Optionally clean up expired entries opportunistically during `countUnexpiredTokens` to prevent unbounded memory growth.",
+    approach: "1. dict tokens: id → expiry.\n2. generate: tokens[id] = t + ttl.\n3. renew: if id present and tokens[id] > t → refresh.\n4. count: prune expired, return count.",
+    solutionPython: `class AuthenticationManager:
+    def __init__(self, timeToLive):
+        self.ttl = timeToLive
+        self.tokens = {}  # id -> expiry
+
+    def generate(self, tokenId, currentTime):
+        self.tokens[tokenId] = currentTime + self.ttl
+
+    def renew(self, tokenId, currentTime):
+        exp = self.tokens.get(tokenId)
+        if exp is not None and exp > currentTime:
+            self.tokens[tokenId] = currentTime + self.ttl
+
+    def countUnexpiredTokens(self, currentTime):
+        # Lazy cleanup keeps memory bounded
+        expired = [k for k, e in self.tokens.items() if e <= currentTime]
+        for k in expired:
+            del self.tokens[k]
+        return len(self.tokens)`,
+    solutionCpp: `class AuthenticationManager {
+    int ttl;
+    unordered_map<string, int> tokens; // id -> expiry
+public:
+    AuthenticationManager(int timeToLive) : ttl(timeToLive) {}
+
+    void generate(string tokenId, int currentTime) {
+        tokens[tokenId] = currentTime + ttl;
+    }
+
+    void renew(string tokenId, int currentTime) {
+        auto it = tokens.find(tokenId);
+        if (it != tokens.end() && it->second > currentTime)
+            it->second = currentTime + ttl;
+    }
+
+    int countUnexpiredTokens(int currentTime) {
+        for (auto it = tokens.begin(); it != tokens.end(); ) {
+            if (it->second <= currentTime) it = tokens.erase(it);
+            else ++it;
+        }
+        return tokens.size();
+    }
+};`,
+    timeComplexity: "O(1) generate/renew, O(N) count",
+    spaceComplexity: "O(active tokens)",
+    patternGuide: "Use **lazy TTL expiration** when:\n- Resources have a relative expiry (sessions, JWTs, cache entries)\n- Per-resource timers are too expensive\n- Cleanup can piggyback on read operations\n\nSimilar: Logger Rate Limiter, TTL Cache, Session Store"
+},
+{
+    id: 158,
+    lcNumber: 2353,
+    title: "Design a Food Rating System",
+    difficulty: "Medium",
+    category: "Design",
+    description: "Each food has a cuisine and a rating. Implement `changeRating(food, newRating)` and `highestRated(cuisine)` returning the food with the highest rating in that cuisine, breaking ties lexicographically.",
+    examples: [
+        "FoodRatings([\"kimchi\",\"miso\",\"sushi\",\"moussaka\",\"ramen\",\"bulgogi\"],\n             [\"korean\",\"japanese\",\"japanese\",\"greek\",\"japanese\",\"korean\"],\n             [9,12,8,15,14,7])\nhighestRated(\"korean\")   → \"kimchi\"\nhighestRated(\"japanese\") → \"ramen\"\nchangeRating(\"sushi\", 16)\nhighestRated(\"japanese\") → \"sushi\"\nchangeRating(\"ramen\", 16)\nhighestRated(\"japanese\") → \"ramen\"  // tie → lex smaller"
+    ],
+    thinkingProcess: [
+        { step: "Two lookups dominate", detail: "We need (a) given a food, find its cuisine + current rating; (b) given a cuisine, find the top-rated food. So we need maps in both directions." },
+        { step: "Per-food metadata", detail: "`foodInfo: food → (cuisine, rating)`. Updated in O(1) on changeRating." },
+        { step: "Per-cuisine ordering — naïve heap with lazy deletion", detail: "Use a max-heap per cuisine, push (-rating, food). On highestRated, pop entries whose stored rating doesn't match the current rating in `foodInfo` (stale entries) until the top is fresh. Push new entry on every changeRating. O(log N) amortized." },
+        { step: "Tie-break by lexicographic order", detail: "Heap key = (-rating, food). Negative rating gives max-rating-first; food string ascending gives lexicographic tie-break naturally." },
+        { step: "Why lazy deletion is the trick", detail: "Removing a specific entry from a heap is O(N). Instead, keep stale entries; only validate them when they bubble to the top. Memory grows with edits but stays correct. (Alternative: use a SortedSet/TreeSet keyed on (-rating, food) for true O(log N) deletes.)" }
+    ],
+    keyInsight: "Per-food map gives O(1) rating updates; per-cuisine max-heap of (-rating, food) gives top-rated lookup. Use lazy deletion — validate the heap top against the live rating and pop stale entries on demand. Tuple ordering naturally handles the lex tie-break.",
+    approach: "1. foodInfo: food → (cuisine, rating).\n2. heaps: cuisine → heap of (-rating, food).\n3. changeRating: update foodInfo, push new heap entry.\n4. highestRated: pop heap until top matches foodInfo.",
+    solutionPython: `import heapq
+from collections import defaultdict
+
+class FoodRatings:
+    def __init__(self, foods, cuisines, ratings):
+        self.info = {}                       # food -> (cuisine, rating)
+        self.heaps = defaultdict(list)       # cuisine -> heap of (-rating, food)
+        for f, c, r in zip(foods, cuisines, ratings):
+            self.info[f] = (c, r)
+            heapq.heappush(self.heaps[c], (-r, f))
+
+    def changeRating(self, food, newRating):
+        c, _ = self.info[food]
+        self.info[food] = (c, newRating)
+        heapq.heappush(self.heaps[c], (-newRating, food))
+
+    def highestRated(self, cuisine):
+        h = self.heaps[cuisine]
+        while True:
+            negR, food = h[0]
+            if -negR == self.info[food][1]:
+                return food
+            heapq.heappop(h)  # stale`,
+    solutionCpp: `class FoodRatings {
+    unordered_map<string, pair<string,int>> info; // food -> (cuisine, rating)
+    unordered_map<string, set<pair<int,string>>> sets; // cuisine -> {(-rating, food)}
+public:
+    FoodRatings(vector<string>& foods, vector<string>& cuisines, vector<int>& ratings) {
+        for (int i = 0; i < (int)foods.size(); i++) {
+            info[foods[i]] = {cuisines[i], ratings[i]};
+            sets[cuisines[i]].insert({-ratings[i], foods[i]});
+        }
+    }
+
+    void changeRating(string food, int newRating) {
+        auto& [c, r] = info[food];
+        sets[c].erase({-r, food});
+        r = newRating;
+        sets[c].insert({-newRating, food});
+    }
+
+    string highestRated(string cuisine) {
+        return sets[cuisine].begin()->second;
+    }
+};`,
+    timeComplexity: "O(log N) per op",
+    spaceComplexity: "O(N) (heap may grow with stale entries)",
+    patternGuide: "Use **hashmap + per-key sorted structure (heap or TreeSet)** when:\n- Need both per-item lookup and per-group ranking\n- Ratings/priorities change frequently\n- Tuple ordering encodes tie-breakers cleanly\n\nSimilar: Design a Leaderboard, Stock Price Fluctuation, Trending Hashtags"
+},
+{
+    id: 159,
+    lcNumber: 641,
+    title: "Design Circular Deque",
+    difficulty: "Medium",
+    category: "Design",
+    description: "Implement a circular double-ended queue of fixed `k` capacity: `insertFront`, `insertLast`, `deleteFront`, `deleteLast`, `getFront`, `getRear`, `isEmpty`, `isFull`. All in O(1).",
+    examples: [
+        "MyCircularDeque(3)\ninsertLast(1) → true\ninsertLast(2) → true\ninsertFront(3) → true\ninsertFront(4) → false (full)\ngetRear() → 2\nisFull() → true\ndeleteLast() → true\ninsertFront(4) → true\ngetFront() → 4"
+    ],
+    thinkingProcess: [
+        { step: "Why a fixed-size array, not a linked list", detail: "Linked list version is trivial but uses O(N) extra pointers and bad cache locality. Interviewers want the ring-buffer version: a fixed array + two indices." },
+        { step: "Two indices: head and tail", detail: "`head` points to the current front element; `tail` points to ONE PAST the current rear (or to the slot where the next rear would go — convention varies). Track `size` separately to disambiguate empty vs full." },
+        { step: "Modular arithmetic for circularity", detail: "All index moves go through `% capacity`. insertFront: `head = (head - 1 + cap) % cap`. insertLast: write at `tail`, then `tail = (tail + 1) % cap`. The `+ cap` handles negative wrap-around in C-like modulo." },
+        { step: "Delete operations", detail: "deleteFront: `head = (head + 1) % cap`, --size. deleteLast: `tail = (tail - 1 + cap) % cap`, --size. Notice we don't need to clear the slot — it'll be overwritten on next insert." },
+        { step: "getFront / getRear", detail: "Front element is `arr[head]`. Rear element is `arr[(tail - 1 + cap) % cap]` (the slot just before tail). Return -1 when empty." },
+        { step: "Why track size explicitly", detail: "If `head == tail`, the deque could be either empty OR full. A separate `size` counter avoids this ambiguity. Alternative: leave one slot always empty, sacrificing capacity for simplicity." }
+    ],
+    keyInsight: "Ring buffer with two pointers (`head`, `tail`) and an explicit `size`. Every index move is `(idx ± 1 + cap) % cap`, giving O(1) ops with O(N) contiguous memory. The explicit `size` resolves the empty-vs-full ambiguity inherent in any single-pointer ring buffer.",
+    approach: "1. arr[capacity] + head + tail + size.\n2. insertFront/Last: shift pointer, write, ++size.\n3. deleteFront/Last: shift pointer, --size.\n4. getFront/Rear: index via head / (tail-1+cap)%cap.",
+    solutionPython: `class MyCircularDeque:
+    def __init__(self, k):
+        self.arr = [0] * k
+        self.cap = k
+        self.head = self.tail = 0
+        self.size = 0
+
+    def insertFront(self, value):
+        if self.size == self.cap: return False
+        self.head = (self.head - 1) % self.cap
+        self.arr[self.head] = value
+        self.size += 1
+        return True
+
+    def insertLast(self, value):
+        if self.size == self.cap: return False
+        self.arr[self.tail] = value
+        self.tail = (self.tail + 1) % self.cap
+        self.size += 1
+        return True
+
+    def deleteFront(self):
+        if self.size == 0: return False
+        self.head = (self.head + 1) % self.cap
+        self.size -= 1
+        return True
+
+    def deleteLast(self):
+        if self.size == 0: return False
+        self.tail = (self.tail - 1) % self.cap
+        self.size -= 1
+        return True
+
+    def getFront(self):
+        return -1 if self.size == 0 else self.arr[self.head]
+
+    def getRear(self):
+        return -1 if self.size == 0 else self.arr[(self.tail - 1) % self.cap]
+
+    def isEmpty(self): return self.size == 0
+    def isFull(self):  return self.size == self.cap`,
+    solutionCpp: `class MyCircularDeque {
+    vector<int> arr;
+    int cap, head = 0, tail = 0, sz = 0;
+public:
+    MyCircularDeque(int k) : arr(k), cap(k) {}
+
+    bool insertFront(int v) {
+        if (sz == cap) return false;
+        head = (head - 1 + cap) % cap;
+        arr[head] = v; sz++;
+        return true;
+    }
+    bool insertLast(int v) {
+        if (sz == cap) return false;
+        arr[tail] = v;
+        tail = (tail + 1) % cap; sz++;
+        return true;
+    }
+    bool deleteFront() {
+        if (!sz) return false;
+        head = (head + 1) % cap; sz--;
+        return true;
+    }
+    bool deleteLast() {
+        if (!sz) return false;
+        tail = (tail - 1 + cap) % cap; sz--;
+        return true;
+    }
+    int getFront() { return sz ? arr[head] : -1; }
+    int getRear()  { return sz ? arr[(tail - 1 + cap) % cap] : -1; }
+    bool isEmpty() { return sz == 0; }
+    bool isFull()  { return sz == cap; }
+};`,
+    timeComplexity: "O(1) per op",
+    spaceComplexity: "O(k)",
+    patternGuide: "Use **ring buffer (array + two pointers)** when:\n- Fixed-capacity FIFO/LIFO/deque\n- Need O(1) ops with cache-friendly contiguous memory\n- Streaming, audio buffers, producer/consumer queues\n\nSimilar: Design Circular Queue, Moving Average from Data Stream, Hit Counter"
+},
+{
+    id: 160,
+    lcNumber: 1244,
+    title: "Design A Leaderboard",
+    difficulty: "Medium",
+    category: "Design",
+    description: "Implement: `addScore(playerId, score)` (creates the player at this score, or adds delta to existing), `top(K)` (sum of top K scores), `reset(playerId)` (player's score to 0).",
+    examples: [
+        "addScore(1, 73), addScore(2, 56), addScore(3, 39), addScore(4, 51), addScore(5, 4)\ntop(1) → 73\nreset(1)         // player 1's score is now 0 (not removed)\nreset(2)\naddScore(2, 51)  // player 2 score = 51\ntop(3) → 141     // 51 + 51 + 39"
+    ],
+    thinkingProcess: [
+        { step: "Two views of the same data", detail: "We need (a) per-player current score (for `addScore` deltas and `reset`) and (b) the scores in sorted order (for `top(K)`). Maintain both, kept in lockstep on every update." },
+        { step: "Map: player → score", detail: "Trivially gives O(1) lookups for delta updates and reset. Reset just sets the score back to 0 (the problem treats 0 as 'inactive' for top-K aggregation since 0 contributes nothing)." },
+        { step: "Sorted structure for top-K — choices", detail: "(a) **Sort on demand**: O(N log N) per `top(K)`. Acceptable for small N or rare top-K calls. (b) **SortedList / TreeMultiset**: insert/remove in O(log N), top-K is the first K elements in O(K). Best general solution." },
+        { step: "addScore update flow", detail: "If player exists: remove old score from sorted structure, add `oldScore + delta`, update map. Else: insert score directly. Two log N operations per update." },
+        { step: "reset flow", detail: "Same as addScore but explicitly setting score to 0: remove old score, insert 0 (or skip insert and treat absent as 0)." },
+        { step: "Why not just a heap?", detail: "Heap supports top-K but not arbitrary-element removal (needed when a player's score changes). SortedList / TreeMap supports both." }
+    ],
+    keyInsight: "Maintain two synchronized structures: a HashMap (player → score) for O(1) lookup, and a SortedList of scores for O(log N) updates and O(K) top-K. Every score change is a remove-then-insert pair so both views stay consistent.",
+    approach: "1. scores: player → current score.\n2. SortedList of all current scores.\n3. addScore: remove old, insert new.\n4. top(K): sum first K of sorted list.\n5. reset: same as addScore with target=0.",
+    solutionPython: `from sortedcontainers import SortedList
+
+class Leaderboard:
+    def __init__(self):
+        self.scores = {}                       # player -> score
+        self.sl = SortedList()                 # all current scores
+
+    def addScore(self, playerId, score):
+        if playerId in self.scores:
+            self.sl.remove(self.scores[playerId])
+            self.scores[playerId] += score
+        else:
+            self.scores[playerId] = score
+        self.sl.add(self.scores[playerId])
+
+    def top(self, K):
+        return sum(self.sl[-K:])
+
+    def reset(self, playerId):
+        self.sl.remove(self.scores[playerId])
+        self.scores[playerId] = 0
+        self.sl.add(0)`,
+    solutionCpp: `class Leaderboard {
+    unordered_map<int,int> scores;   // player -> score
+    multiset<int> ms;                // all current scores
+public:
+    void addScore(int playerId, int score) {
+        if (scores.count(playerId)) {
+            ms.erase(ms.find(scores[playerId]));
+            scores[playerId] += score;
+        } else {
+            scores[playerId] = score;
+        }
+        ms.insert(scores[playerId]);
+    }
+
+    int top(int K) {
+        int sum = 0;
+        auto it = ms.rbegin();
+        while (K-- && it != ms.rend()) { sum += *it; ++it; }
+        return sum;
+    }
+
+    void reset(int playerId) {
+        ms.erase(ms.find(scores[playerId]));
+        scores[playerId] = 0;
+        ms.insert(0);
+    }
+};`,
+    timeComplexity: "O(log N) addScore/reset, O(K) top",
+    spaceComplexity: "O(N)",
+    patternGuide: "Use **HashMap + sorted multiset/list** when:\n- Need both per-key updates and global ranking\n- Single value can change, requiring efficient remove+insert\n- Top-K queries are common\n\nSimilar: Food Rating System, Stock Price Fluctuation, Top K Frequent Elements"
 },
 ];
