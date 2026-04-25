@@ -1,5 +1,18 @@
 const changelog = [
     {
+        version: "1.9.0",
+        date: "2026-04-25",
+        title: "✨ Ask AI — Free, Keyless Inline Answers + Right-Edge Swipe",
+        changes: [
+            { type: "feature", text: "New ✨ Ask AI side panel — opens via a floating bottom-right button, a right-edge swipe gesture, or the ? / a keyboard shortcut. Auto-detects the current topic (algorithm problem, AI/ML system design, AI/ML basics, AI for Devs, or active flashcard) and pre-fills the prompt context" },
+            { type: "feature", text: "Free, keyless inline answers powered by Pollinations.ai — no signup, no API key, no data stored. Choose from 6 models (gpt-4o-mini, gpt-4o, mistral, llama, deepseek, gemini)" },
+            { type: "feature", text: "5 quick-prompt chips for one-tap questions: Explain like I'm 5, Interview answer, Common pitfalls, Compare alternatives, Real-world example" },
+            { type: "feature", text: "Open-in-external-AI shortcuts (collapsible) for Gemini, ChatGPT, Claude, Perplexity, Phind, and Google — topic and prompt are pre-filled in the URL" },
+            { type: "feature", text: "Mobile-first UX: safe-area insets for iOS notch/home bar, full-width modal under 768px, swipe-right-to-dismiss, sticky Copy / Ask AI footer always in view, and a ✎ toggle in the header to expand/collapse the prompt section for follow-up questions" },
+            { type: "improved", text: "Touch-aware swipe gesture with intent detection — won't fight vertical page scrolling, blocks iOS forward-nav gesture only when committed horizontally" },
+        ]
+    },
+    {
         version: "1.8.0",
         date: "2026-04-27",
         title: "AI for Devs — Agentic AI Skills for Engineers",

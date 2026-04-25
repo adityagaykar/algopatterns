@@ -1,0 +1,512 @@
+/* ============================================================
+   AI Lookup — floating button, right-edge swipe handle, modal
+   ============================================================ */
+
+/* --------- Floating Action Button (mobile + desktop) --------- */
+.ai-fab {
+    position: fixed;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    right: calc(24px + env(safe-area-inset-right, 0px));
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #4263eb, #7048e8 55%, #c92a92);
+    color: #fff;
+    font-size: 24px;
+    box-shadow: 0 6px 20px rgba(64, 47, 184, 0.45);
+    z-index: 951;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+.ai-fab:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 10px 28px rgba(64, 47, 184, 0.55);
+}
+.ai-fab:active { transform: scale(0.96); }
+
+/* hide handle on small screens — FAB is enough; swipe still works */
+@media (max-width: 768px) {
+    .ai-fab {
+        bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+        right: calc(18px + env(safe-area-inset-right, 0px));
+        width: 56px;
+        height: 56px;
+        font-size: 24px;
+    }
+}
+
+/* --------- Swipe-from-right ghost preview --------- */
+.ai-swipe-ghost {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 0;
+    background: linear-gradient(270deg, rgba(112, 72, 232, 0.35), rgba(66, 99, 235, 0.0));
+    pointer-events: none;
+    z-index: 940;
+    transition: width 0.08s linear;
+}
+
+/* --------- Modal --------- */
+.ai-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 12, 30, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: none;
+    align-items: stretch;
+    justify-content: flex-end;
+    animation: aiFadeIn 0.18s ease;
+}
+.ai-modal-backdrop.open { display: flex; }
+
+@keyframes aiFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes aiSlideIn {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+}
+
+.ai-modal {
+    width: min(520px, 100vw);
+    height: 100%;
+    max-height: 100dvh;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    box-shadow: -10px 0 40px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+    animation: aiSlideIn 0.22s ease;
+    overflow: hidden;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.ai-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(66,99,235,0.08), rgba(112,72,232,0.08));
+}
+.ai-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.ai-modal-header .ai-topic-pill {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--accent-light, rgba(66,99,235,0.12));
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ai-topic-wrap {
+    flex: 1;
+    min-width: 0;
+}
+.ai-topic-wrap .ai-topic-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary, #6c757d);
+    margin-bottom: 2px;
+}
+.ai-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    min-width: 44px;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+}
+.ai-modal-close:hover { background: var(--bg-secondary); }
+
+.ai-modal-toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    min-width: 40px;
+    min-height: 40px;
+    -webkit-tap-highlight-color: transparent;
+    margin-right: 4px;
+}
+.ai-modal-toggle:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.ai-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: 14px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Compact top section that doesn't scroll */
+.ai-top-section {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -16px;
+    padding: 0 16px;
+    transition: max-height 0.3s ease;
+}
+.ai-top-section::-webkit-scrollbar { width: 4px; }
+.ai-top-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.ai-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary, #6c757d);
+    margin: 4px 0 6px;
+}
+
+/* Collapsible "Open in external AI assistant" section */
+.ai-providers-details {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: transparent;
+}
+.ai-providers-details > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 2px 2px;
+    user-select: none;
+}
+.ai-providers-details > summary::-webkit-details-marker { display: none; }
+.ai-providers-caret {
+    font-size: 12px;
+    color: var(--text-secondary, #6c757d);
+    transition: transform 0.18s ease;
+}
+.ai-providers-details[open] > summary .ai-providers-caret {
+    transform: rotate(180deg);
+}
+.ai-providers-details[open] {
+    border-style: solid;
+    border-color: var(--border);
+}
+.ai-providers-details .ai-providers {
+    margin-top: 10px;
+}
+
+/* Quick provider grid */
+.ai-providers {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+.ai-provider-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.ai-provider-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent);
+    background: var(--bg-secondary);
+}
+.ai-provider-btn .ai-prov-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    background: var(--bg-secondary);
+    flex-shrink: 0;
+}
+.ai-provider-btn .ai-prov-meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+}
+.ai-provider-btn .ai-prov-sub {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary, #6c757d);
+    margin-top: 2px;
+}
+
+/* Custom prompt */
+.ai-prompt-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.ai-prompt-wrap textarea {
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.ai-prompt-wrap textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light, rgba(66,99,235,0.18));
+}
+.ai-prompt-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ai-quick-chip {
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px dashed var(--border);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+.ai-quick-chip:hover {
+    border-style: solid;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Inline live-answer card */
+.ai-inline-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 200px;
+    margin-bottom: 14px;
+}
+.ai-inline-card .ai-inline-output {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+.ai-inline-head {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+}
+.ai-inline-head .ai-inline-title {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ai-inline-head select {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 12px;
+}
+.ai-inline-key-row {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+}
+.ai-inline-key-row input {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+}
+.ai-inline-key-row button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.ai-inline-key-row .ai-key-clear {
+    background: transparent;
+    color: var(--accent);
+}
+.ai-inline-output {
+    padding: 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    color: var(--text-primary);
+    box-sizing: border-box;
+}
+.ai-inline-output.empty {
+    color: var(--text-secondary, #6c757d);
+    font-style: italic;
+}
+.ai-inline-output code {
+    background: var(--bg-primary);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.92em;
+}
+
+/* Modal footer — always-visible action bar */
+.ai-modal-footer {
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+    background: var(--bg-primary);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
+}
+.ai-modal-footer button {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #4263eb, #7048e8);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    min-height: 44px;
+}
+.ai-modal-footer button.secondary {
+    flex: 0 0 auto;
+    min-width: 100px;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+.ai-modal-footer button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ai-key-help {
+    font-size: 11px;
+    color: var(--text-secondary, #6c757d);
+    padding: 0 12px 10px;
+    line-height: 1.4;
+}
+.ai-key-help a {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+/* swipe hint toast (first-run) */
+.ai-hint-toast {
+    position: fixed;
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    right: calc(24px + env(safe-area-inset-right, 0px));
+    background: rgba(20, 24, 48, 0.92);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    z-index: 949;
+    box-shadow: var(--shadow-md);
+    animation: aiFadeIn 0.25s ease;
+    max-width: calc(100vw - 48px);
+}
+@media (max-width: 768px) {
+    .ai-hint-toast {
+        right: calc(18px + env(safe-area-inset-right, 0px));
+        bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+    }
+    .ai-modal { box-shadow: none; }
+    .ai-modal-body { padding: 14px 14px 14px; }
+    .ai-providers { grid-template-columns: 1fr; }
+    .ai-prompt-wrap textarea { min-height: 80px; font-size: 14px; }
+    .ai-quick-chip { padding: 8px 12px; font-size: 13px; }
+    .ai-provider-btn { padding: 14px; font-size: 14px; }
+}
+
+/* Tablet (single column more spacious) */
+@media (min-width: 481px) and (max-width: 1024px) {
+    .ai-modal { width: min(560px, 92vw); }
+}
+
+/* Body lock when modal open (prevents background scroll on iOS) */
+body.ai-modal-open {
+    overflow: hidden;
+}
