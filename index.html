@@ -173,6 +173,16 @@
                         <div class="pattern-grid" id="patternGrid">
                             <!-- Populated dynamically from problems data -->
                         </div>
+                        <div class="playbook-cta">
+                            <button class="playbook-launch-btn" onclick="openPatternPlaybook()">
+                                <span class="playbook-launch-icon">🧭</span>
+                                <span class="playbook-launch-text">
+                                    <span class="playbook-launch-title">Pattern Recognition Playbook</span>
+                                    <span class="playbook-launch-sub">50+ named patterns — what each one is, the key idea that cracks it, and 5 problems to drill it. Built to recognise the pattern behind a novel problem.</span>
+                                </span>
+                                <span class="playbook-launch-arrow">→</span>
+                            </button>
+                        </div>
                         <div class="flashcard-cta">
                             <button class="flashcard-launch-btn" onclick="openFlashcards('patterns')">🃏 Pattern Flash Cards</button>
                             <button class="flashcard-launch-btn fc-btn-problems" onclick="openFlashcards('problems')">📝 Problem Flash Cards</button>
@@ -244,7 +254,24 @@
                 <div class="cl-content" id="clContent"></div>
             </div>
 
-            <!-- Flashcard View -->
+            <!-- Pattern Recognition Playbook View -->
+            <div id="patternsView" class="patterns-view" style="display:none;">
+                <div class="pp-header">
+                    <div class="pp-header-text">
+                        <h2>🧭 Pattern Recognition Playbook</h2>
+                        <p>The pattern behind a problem is what interviewers test. Each family expands into its named sub-patterns — what it is, the key idea that cracks it, and problems to drill.</p>
+                    </div>
+                    <button class="pp-back-btn" onclick="goHome()">← Back</button>
+                </div>
+                <div class="pp-toolbar">
+                    <input type="text" id="ppSearch" class="pp-search" placeholder="Search patterns, ideas, or problems…" oninput="filterPatternPlaybook(this.value)" />
+                    <div class="pp-toolbar-btns">
+                        <button class="pp-tool-btn" onclick="expandAllPatternMacros(true)">Expand all</button>
+                        <button class="pp-tool-btn" onclick="expandAllPatternMacros(false)">Collapse all</button>
+                    </div>
+                </div>
+                <div class="pp-content" id="ppContent"></div>
+            </div>
             <div id="flashcardView" class="flashcard-view" style="display:none;">
                 <div class="fc-header">
                     <div class="fc-mode-tabs">
@@ -441,6 +468,7 @@
     <script src="data/ai-ml-basics-flashcards.js"></script>
     <script src="data/ai-dev-skills.js"></script>
     <script src="data/ai-dev-skills-flashcards.js"></script>
+    <script src="data/pattern-insights.js"></script>
     <script src="data/changelog.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>

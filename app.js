@@ -387,6 +387,8 @@ function renderProblemDetail() {
     if (aimlV) aimlV.style.display = 'none';
     const basicsV = document.getElementById('basicsView');
     if (basicsV) basicsV.style.display = 'none';
+    const patternsV = document.getElementById('patternsView');
+    if (patternsV) patternsV.style.display = 'none';
 
     // Header
     dom.problemTitle.textContent = `${p.lcNumber}. ${p.title}`;
@@ -457,6 +459,10 @@ function navigateProblem(direction) {
 
 function handleHashNavigation() {
     const hash = window.location.hash;
+    if (hash === '#patterns') {
+        openPatternPlaybook();
+        return;
+    }
     const match = hash.match(/#problem-(\d+)/);
     if (match) {
         const id = parseInt(match[1]);
@@ -565,6 +571,8 @@ function goHome() {
     if (basicsV) basicsV.style.display = 'none';
     const devSkillsV = document.getElementById('devSkillsView');
     if (devSkillsV) devSkillsV.style.display = 'none';
+    const patternsV = document.getElementById('patternsView');
+    if (patternsV) patternsV.style.display = 'none';
     $('#fcFullscreen').style.display = 'none';
     document.body.style.overflow = '';
     document.body.style.position = '';
@@ -609,6 +617,116 @@ function renderChangelog() {
             </ul>
         </div>
     `).join('');
+}
+
+// ===== PATTERN RECOGNITION PLAYBOOK =====
+// Reverse of the problem→pattern flow: a catalog of named recognition-level
+// patterns (data/pattern-insights.js), grouped by macro category. Each pattern
+// shows what it is, the key idea that cracks it, and a small problem deck.
+function getPatternInsights() {
+    return (typeof patternInsights !== 'undefined' ? patternInsights : []);
+}
+
+function openPatternPlaybook() {
+    dom.welcomeScreen.style.display = 'none';
+    dom.problemView.style.display = 'none';
+    $('#flashcardView').style.display = 'none';
+    $('#changelogView').style.display = 'none';
+    const aimlV = document.getElementById('aimlView');
+    if (aimlV) aimlV.style.display = 'none';
+    const basicsV = document.getElementById('basicsView');
+    if (basicsV) basicsV.style.display = 'none';
+    const devSkillsV = document.getElementById('devSkillsView');
+    if (devSkillsV) devSkillsV.style.display = 'none';
+    window.location.hash = '#patterns';
+    const view = document.getElementById('patternsView');
+    if (view) view.style.display = 'flex';
+    renderPatternPlaybook();
+    closeSidebar();
+    const mc = document.getElementById('mainContent');
+    if (mc) mc.scrollTop = 0;
+}
+
+function renderPatternPlaybook() {
+    const host = document.getElementById('ppContent');
+    if (!host) return;
+    const insights = getPatternInsights();
+    if (!insights.length) {
+        host.innerHTML = '<p class="pp-empty">Pattern catalog unavailable.</p>';
+        return;
+    }
+    const pmap = new Map((typeof problems !== 'undefined' ? problems : []).map(p => [p.id, p]));
+
+    // Group patterns by macro, ordered by the canonical PATTERN_ICONS order.
+    const groups = new Map();
+    insights.forEach(pat => {
+        if (!groups.has(pat.macro)) groups.set(pat.macro, []);
+        groups.get(pat.macro).push(pat);
+    });
+    const order = Object.keys(PATTERN_ICONS).filter(m => groups.has(m));
+    groups.forEach((_, m) => { if (!order.includes(m)) order.push(m); });
+
+    host.innerHTML = order.map((macro, gi) => {
+        const pats = groups.get(macro);
+        const icon = PATTERN_ICONS[macro] || '🔹';
+        const cards = pats.map(pat => {
+            const chips = (pat.problemIds || []).map((pid, i) => {
+                const p = pmap.get(pid);
+                if (!p) return '';
+                const isCore = i < (pat.coreCount || 0);
+                return `<button class="pp-chip${isCore ? ' is-core' : ''}" onclick="selectProblem(${pid})" title="${escapeHtml(p.title)}${isCore ? ' · core example' : ''}">
+                    <span class="pp-chip-lc">${p.lcNumber}</span>
+                    <span class="pp-chip-title">${escapeHtml(p.title)}</span>
+                    <span class="pp-chip-diff ${p.difficulty}">${p.difficulty[0]}</span>
+                </button>`;
+            }).join('');
+            return `<div class="pp-pattern" data-search="${escapeHtml((pat.pattern + ' ' + pat.description + ' ' + pat.keyIdea + ' ' + (pat.aliases || []).join(' ')).toLowerCase())}">
+                <h4 class="pp-pattern-name">${escapeHtml(pat.pattern)}</h4>
+                <p class="pp-desc">${formatText(escapeHtml(pat.description))}</p>
+                <div class="pp-key"><span class="pp-key-label">💡 Key idea</span><span class="pp-key-text">${formatText(escapeHtml(pat.keyIdea))}</span></div>
+                <div class="pp-problems">${chips}</div>
+            </div>`;
+        }).join('');
+        return `<section class="pp-macro${gi === 0 ? ' open' : ''}" data-macro="${escapeHtml(macro)}">
+            <button class="pp-macro-header" onclick="togglePatternMacro(this)" aria-expanded="${gi === 0 ? 'true' : 'false'}">
+                <span class="pp-macro-icon">${icon}</span>
+                <span class="pp-macro-name">${escapeHtml(macro)}</span>
+                <span class="pp-macro-count">${pats.length} pattern${pats.length === 1 ? '' : 's'}</span>
+                <span class="pp-macro-arrow">▸</span>
+            </button>
+            <div class="pp-macro-body">${cards}</div>
+        </section>`;
+    }).join('');
+}
+
+function togglePatternMacro(headerEl) {
+    const macro = headerEl.closest('.pp-macro');
+    if (!macro) return;
+    const open = macro.classList.toggle('open');
+    headerEl.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function expandAllPatternMacros(open) {
+    document.querySelectorAll('#ppContent .pp-macro').forEach(m => {
+        m.classList.toggle('open', open);
+        const h = m.querySelector('.pp-macro-header');
+        if (h) h.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+}
+
+function filterPatternPlaybook(query) {
+    const q = (query || '').trim().toLowerCase();
+    document.querySelectorAll('#ppContent .pp-macro').forEach(macro => {
+        let anyVisible = false;
+        macro.querySelectorAll('.pp-pattern').forEach(card => {
+            const hit = !q || (card.dataset.search || '').includes(q);
+            card.style.display = hit ? '' : 'none';
+            if (hit) anyVisible = true;
+        });
+        macro.style.display = anyVisible ? '' : 'none';
+        // When searching, force-open matching groups so results are visible.
+        if (q) macro.classList.toggle('open', anyVisible);
+    });
 }
 
 // ===== START =====
