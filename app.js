@@ -680,9 +680,17 @@ function renderPatternPlaybook() {
                     <span class="pp-chip-diff ${p.difficulty}">${p.difficulty[0]}</span>
                 </button>`;
             }).join('');
-            return `<div class="pp-pattern" data-search="${escapeHtml((pat.pattern + ' ' + pat.description + ' ' + pat.keyIdea + ' ' + (pat.aliases || []).join(' ')).toLowerCase())}">
+            const pointsHtml = (pat.points || []).map(pt => {
+                const ci = pt.indexOf(': ');
+                if (ci > 0 && ci <= 12) {
+                    return `<li><strong>${escapeHtml(pt.slice(0, ci))}</strong> ${formatText(escapeHtml(pt.slice(ci + 2)))}</li>`;
+                }
+                return `<li>${formatText(escapeHtml(pt))}</li>`;
+            }).join('');
+            const searchText = (pat.pattern + ' ' + pat.description + ' ' + pat.keyIdea + ' ' + (pat.points || []).join(' ') + ' ' + (pat.aliases || []).join(' ')).toLowerCase();
+            return `<div class="pp-pattern" data-search="${escapeHtml(searchText)}">
                 <h4 class="pp-pattern-name">${escapeHtml(pat.pattern)}</h4>
-                <p class="pp-desc">${formatText(escapeHtml(pat.description))}</p>
+                <ul class="pp-points">${pointsHtml}</ul>
                 <div class="pp-key"><span class="pp-key-label">💡 Key idea</span><span class="pp-key-text">${formatText(escapeHtml(pat.keyIdea))}</span></div>
                 <div class="pp-problems">${chips}</div>
             </div>`;
